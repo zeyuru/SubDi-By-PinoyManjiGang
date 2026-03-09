@@ -1,0 +1,2142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Villa Purita Subdivision — Management System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+:root {
+  --bg: #0b0f1a;
+  --bg2: #111827;
+  --bg3: #1a2235;
+  --card: #141c2e;
+  --border: #1e2d47;
+  --accent: #3b82f6;
+  --accent2: #06b6d4;
+  --green: #10b981;
+  --red: #ef4444;
+  --yellow: #f59e0b;
+  --purple: #8b5cf6;
+  --text: #e2e8f0;
+  --text2: #94a3b8;
+  --text3: #475569;
+  --glow: rgba(59,130,246,0.15);
+  
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;overflow:hidden;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);display:flex;height:100vh;}
+
+/* ── SIDEBAR ── */
+#sidebar{width:240px;min-width:240px;background:var(--card);border-right:1px solid var(--border);display:flex;flex-direction:column;z-index:100;transition:width .3s;}
+.sidebar-logo{padding:20px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+.logo-icon{width:34px;height:34px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;}
+.logo-text{font-family:'Syne',sans-serif;font-weight:800;font-size:14px;line-height:1.2;}
+.logo-text span{color:var(--accent2);font-size:10px;font-weight:400;display:block;letter-spacing:2px;text-transform:uppercase;}
+
+.role-badge{margin:12px 14px;padding:8px 12px;background:var(--bg3);border-radius:8px;border:1px solid var(--border);display:flex;align-items:center;gap:8px;font-size:12px;}
+.role-dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);flex-shrink:0;}
+
+.nav-section{padding:8px 0;}
+.nav-label{padding:6px 18px;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);font-weight:600;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 18px;cursor:pointer;transition:all .2s;font-size:13px;color:var(--text2);border-left:2px solid transparent;position:relative;}
+.nav-item:hover{background:var(--bg3);color:var(--text);border-left-color:var(--border);}
+.nav-item.active{background:linear-gradient(90deg,rgba(59,130,246,.12),transparent);color:var(--accent);border-left-color:var(--accent);}
+.nav-item .icon{width:18px;text-align:center;font-size:15px;flex-shrink:0;}
+.nav-badge{margin-left:auto;background:var(--red);color:#fff;font-size:10px;padding:1px 6px;border-radius:10px;font-weight:600;}
+.nav-badge.green{background:var(--green);}
+.nav-badge.yellow{background:var(--yellow);}
+
+.sidebar-footer{margin-top:auto;padding:14px 14px;border-top:1px solid var(--border);}
+.user-card{display:flex;align-items:center;gap:10px;padding:8px;border-radius:8px;cursor:pointer;transition:background .2s;}
+.user-card:hover{background:var(--bg3);}
+.avatar{width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,var(--accent),var(--purple));display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;}
+.user-info{flex:1;min-width:0;}
+.user-name{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.user-role{font-size:10px;color:var(--text3);}
+
+/* ── MAIN ── */
+#main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+
+/* TOPBAR */
+#topbar{height:56px;background:var(--card);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 20px;gap:14px;flex-shrink:0;}
+.topbar-title{font-family:'Syne',sans-serif;font-weight:700;font-size:16px;flex:1;}
+.topbar-title span{color:var(--text2);font-weight:400;font-size:13px;margin-left:8px;font-family:'DM Sans',sans-serif;}
+.topbar-actions{display:flex;align-items:center;gap:8px;}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:7px;font-size:12px;font-weight:500;cursor:pointer;border:none;transition:all .2s;font-family:'DM Sans',sans-serif;}
+.btn-primary{background:var(--accent);color:#fff;}
+.btn-primary:hover{background:#2563eb;}
+.btn-ghost{background:transparent;color:var(--text2);border:1px solid var(--border);}
+.btn-ghost:hover{background:var(--bg3);color:var(--text);}
+.btn-danger{background:var(--red);color:#fff;}
+.btn-success{background:var(--green);color:#fff;}
+.notif-btn{position:relative;width:36px;height:36px;border-radius:8px;background:var(--bg3);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;transition:all .2s;}
+.notif-btn:hover{border-color:var(--accent);}
+.notif-dot{position:absolute;top:6px;right:6px;width:7px;height:7px;background:var(--red);border-radius:50%;border:1.5px solid var(--card);}
+.search-box{display:flex;align-items:center;gap:8px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:7px 12px;font-size:13px;color:var(--text2);cursor:text;transition:border .2s;}
+.search-box:hover{border-color:var(--accent);}
+
+/* CONTENT */
+#content{flex:1;overflow-y:auto;padding:20px;}
+#content::-webkit-scrollbar{width:5px;}
+#content::-webkit-scrollbar-track{background:transparent;}
+#content::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+
+/* PANELS */
+.panel{display:none;animation:fadeIn .3s ease;}
+.panel.active{display:block;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+
+/* STATS GRID */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px;margin-bottom:20px;}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;position:relative;overflow:hidden;transition:border-color .2s;}
+.stat-card:hover{border-color:var(--accent);}
+.stat-card::before{content:'';position:absolute;top:0;right:0;width:60px;height:60px;border-radius:0 12px 0 60px;opacity:.07;}
+.stat-card.blue::before{background:var(--accent);}
+.stat-card.cyan::before{background:var(--accent2);}
+.stat-card.green::before{background:var(--green);}
+.stat-card.red::before{background:var(--red);}
+.stat-card.yellow::before{background:var(--yellow);}
+.stat-card.purple::before{background:var(--purple);}
+.stat-icon{font-size:22px;margin-bottom:10px;color:var(--text);}
+.stat-value{font-family:'Syne',sans-serif;font-size:26px;font-weight:800;line-height:1;color:var(--text);}
+.stat-label{font-size:11px;color:var(--text2);margin-top:4px;text-transform:uppercase;letter-spacing:1px;}
+.stat-change{font-size:11px;margin-top:6px;color:var(--green);}
+
+/* GRID LAYOUTS */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px;}
+.grid-2-1{display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-bottom:14px;}
+.grid-1-2{display:grid;grid-template-columns:1fr 2fr;gap:14px;margin-bottom:14px;}
+
+/* CARD */
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+.card-header{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.card-title{font-family:'Syne',sans-serif;font-weight:700;font-size:13px;display:flex;align-items:center;gap:8px;}
+.card-body{padding:16px;}
+
+/* MAP */
+#map{width:100%;height:100%;min-height:380px;}
+.map-wrapper{border-radius:12px;overflow:hidden;border:1px solid var(--border);}
+
+/* TABLE */
+.table-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:12px;}
+th{padding:9px 12px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--text3);font-weight:600;border-bottom:1px solid var(--border);background:var(--bg3);}
+td{padding:10px 12px;border-bottom:1px solid rgba(30,45,71,.6);color:var(--text2);}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:rgba(255,255,255,.02);}
+.td-name{color:var(--text);font-weight:500;}
+
+/* BADGES */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:5px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;}
+.badge-green{background:rgba(16,185,129,.15);color:var(--green);border:1px solid rgba(16,185,129,.25);}
+.badge-red{background:rgba(239,68,68,.15);color:var(--red);border:1px solid rgba(239,68,68,.25);}
+.badge-yellow{background:rgba(245,158,11,.15);color:var(--yellow);border:1px solid rgba(245,158,11,.25);}
+.badge-blue{background:rgba(59,130,246,.15);color:var(--accent);border:1px solid rgba(59,130,246,.25);}
+.badge-purple{background:rgba(139,92,246,.15);color:var(--purple);border:1px solid rgba(139,92,246,.25);}
+.badge-dot{width:5px;height:5px;border-radius:50%;background:currentColor;}
+
+/* FORM */
+.form-group{margin-bottom:14px;}
+.form-label{display:block;font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;}
+.form-input{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;transition:border .2s;font-family:'DM Sans',sans-serif;}
+.form-input:focus{border-color:var(--accent);}
+.form-input::placeholder{color:var(--text3);}
+select.form-input option{background:var(--bg2);}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);z-index:999;display:none;align-items:center;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--card);border:1px solid var(--border);border-radius:16px;width:520px;max-width:95vw;max-height:90vh;overflow-y:auto;animation:modalIn .25s ease;}
+@keyframes modalIn{from{transform:scale(.93);opacity:0;}to{transform:scale(1);opacity:1;}}
+.modal-header{padding:18px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.modal-title{font-family:'Syne',sans-serif;font-weight:700;font-size:15px;}
+.modal-close{width:30px;height:30px;border-radius:6px;background:var(--bg3);border:1px solid var(--border);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--text2);}
+.modal-body{padding:20px;}
+.modal-footer{padding:16px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;}
+
+/* ALERT */
+.alert{padding:12px 14px;border-radius:8px;font-size:12px;display:flex;align-items:flex-start;gap:10px;margin-bottom:10px;}
+.alert-red{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.25);color:#fca5a5;}
+.alert-yellow{background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.25);color:#fcd34d;}
+.alert-green{background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.25);color:#6ee7b7;}
+.alert-blue{background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.25);color:#93c5fd;}
+.alert-icon{font-size:16px;flex-shrink:0;margin-top:1px;}
+
+/* PROGRESS */
+.progress-bar{height:5px;background:var(--bg3);border-radius:3px;overflow:hidden;margin-top:6px;}
+.progress-fill{height:100%;border-radius:3px;transition:width .6s ease;}
+
+/* TIMELINE */
+.timeline{position:relative;padding-left:20px;}
+.timeline::before{content:'';position:absolute;left:6px;top:0;bottom:0;width:1px;background:var(--border);}
+.tl-item{position:relative;margin-bottom:14px;}
+.tl-dot{position:absolute;left:-17px;top:4px;width:9px;height:9px;border-radius:50%;border:2px solid var(--bg);}
+.tl-time{font-size:10px;color:var(--text3);margin-bottom:2px;}
+.tl-text{font-size:12px;color:var(--text2);}
+.tl-text strong{color:var(--text);}
+
+/* VISITOR LOG */
+.visitor-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);}
+.visitor-row:last-child{border-bottom:none;}
+.visitor-avatar{width:34px;height:34px;border-radius:8px;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;}
+.visitor-info{flex:1;min-width:0;}
+.visitor-name{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.visitor-detail{font-size:11px;color:var(--text3);}
+
+/* PAYMENT */
+.payment-item{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);}
+.payment-item:last-child{border-bottom:none;}
+
+/* SEARCH HIGHLIGHT */
+.highlight-pulse{animation:hlPulse 2s infinite;}
+@keyframes hlPulse{0%,100%{box-shadow:0 0 0 0 rgba(59,130,246,.4);}50%{box-shadow:0 0 0 12px rgba(59,130,246,0);}}
+@keyframes spin{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
+
+/* LOGIN SCREEN */
+#login-screen{position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;align-items:center;justify-content:center;}
+.login-card{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:40px;width:400px;max-width:95vw;text-align:center;}
+.login-logo{width:60px;height:60px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 20px;}
+.login-title{font-family:'Syne',sans-serif;font-weight:800;font-size:24px;margin-bottom:6px;}
+.login-sub{font-size:13px;color:var(--text2);margin-bottom:28px;}
+.role-select-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:20px;}
+.role-btn{padding:12px 8px;border-radius:10px;border:2px solid var(--border);background:var(--bg3);cursor:pointer;transition:all .2s;text-align:center;font-size:12px;color:var(--text2);}
+.role-btn:hover,.role-btn.selected{border-color:var(--accent);background:rgba(59,130,246,.1);color:var(--accent);}
+.role-btn .ri{font-size:22px;display:block;margin-bottom:5px;}
+.login-footer{font-size:11px;color:var(--text3);margin-top:16px;}
+
+/* Scrollbar global */
+*::-webkit-scrollbar{width:4px;height:4px;}
+*::-webkit-scrollbar-track{background:transparent;}
+*::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+
+
+
+/* Responsive tablet */
+@media(max-width:1100px){.grid-3{grid-template-columns:1fr 1fr;}.grid-2-1,.grid-1-2{grid-template-columns:1fr;}}
+@media(max-width:800px){#sidebar{width:60px;min-width:60px;}.logo-text,.nav-item span,.user-info,.role-badge span{display:none;}.nav-item{justify-content:center;padding:10px;}.stats-grid{grid-template-columns:1fr 1fr;}.grid-2{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+
+<!-- LOGIN SCREEN -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">🏘️</div>
+    <div class="login-title">Villa Purita Subdivision</div>
+    <div class="login-sub">Minglanilla, Cebu Management System</div>
+    <div class="form-group" style="text-align:left">
+      <label class="form-label">Username</label>
+      <input class="form-input" id="login-user" placeholder="Enter username">
+    </div>
+    <div class="form-group" style="text-align:left">
+      <label class="form-label">Password</label>
+      <input class="form-input" type="password" id="login-pass" placeholder="Enter password">
+    </div>
+    <div style="text-align:left;margin-bottom:16px;">
+      <label class="form-label">Login As</label>
+      <div class="role-select-grid">
+        <div class="role-btn selected" onclick="selectRole('Administrator',this)"><span class="ri">👔</span>Admin</div>
+        <div class="role-btn" onclick="selectRole('Guard',this)"><span class="ri">🛡️</span>Guard</div>
+        <div class="role-btn" onclick="selectRole('Homeowner',this)"><span class="ri">🏠</span>Owner</div>
+      </div>
+    </div>
+    <button class="btn btn-primary" style="width:100%;padding:12px;font-size:14px;border-radius:10px;" onclick="doLogin()">Sign In →</button>
+    <div class="login-footer">Secure access • Role-based control • Session managed</div>
+  </div>
+</div>
+
+<!-- SIDEBAR -->
+<nav id="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-icon">🏘️</div>
+    <div class="logo-text">Villa Purita<span>Management</span></div>
+  </div>
+  <div class="role-badge"><div class="role-dot"></div><span id="sidebar-role">Administrator</span></div>
+
+  <div class="nav-section">
+    <div class="nav-label">Core</div>
+    <div class="nav-item active" onclick="showPanel('dashboard',this)"><span class="icon">📊</span><span>Dashboard</span></div>
+    <div class="nav-item" onclick="showPanel('map',this)"><span class="icon">🗺️</span><span>Live Map</span></div>
+    <div class="nav-item nav-admin nav-guard" onclick="showPanel('residents',this)"><span class="icon">👥</span><span>Residents</span></div>
+    <div class="nav-item nav-admin" onclick="showPanel('blocklot',this)"><span class="icon">🏗️</span><span>Block & Lot</span></div>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-label">Operations</div>
+    <div class="nav-item nav-admin nav-guard" onclick="showPanel('visitors',this)"><span class="icon">🚗</span><span>Visitors</span><span class="nav-badge green">3</span></div>
+    <div class="nav-item nav-admin nav-guard nav-homeowner" onclick="showPanel('dues',this)"><span class="icon">💰</span><span>Dues & Payment</span><span class="nav-badge yellow">7</span></div>
+    <div class="nav-item nav-admin nav-guard nav-homeowner" onclick="showPanel('incidents',this)"><span class="icon">🚨</span><span>Incidents</span><span class="nav-badge">2</span></div>
+    <div class="nav-item nav-admin nav-guard nav-homeowner" onclick="showPanel('announcements',this)"><span class="icon">📢</span><span>Announcements</span></div>
+  </div>
+
+  <div class="nav-section nav-admin-section nav-guard-section">
+    <div class="nav-label">Access</div>
+    <div class="nav-item nav-admin" onclick="showPanel('users',this)"><span class="icon">🔑</span><span>User Management</span></div>
+    <div class="nav-item nav-admin" onclick="showPanel('reports',this)"><span class="icon">📋</span><span>Reports</span></div>
+    <div class="nav-item nav-guard" onclick="showPanel('guard',this)"><span class="icon">🛡️</span><span>Guard Console</span></div>
+  </div>
+
+  <div class="sidebar-footer">
+    <div class="user-card" onclick="doLogout()">
+      <div class="avatar">A</div>
+      <div class="user-info">
+        <div class="user-name" id="sidebar-name">Admin User</div>
+        <div class="user-role">Click to Logout</div>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- MAIN AREA -->
+<div id="main">
+  <div id="topbar">
+      <div class="search-box" onclick="document.getElementById('search-modal').classList.add('open')">🔍 <span style="font-size:12px;">Quick search...</span></div>
+      <div class="notif-btn" onclick="showPanel('incidents',document.querySelector('[onclick*=incidents]'))">🔔<div class="notif-dot"></div></div>
+      <button class="btn btn-primary" id="new-record-btn" onclick="openModal('add-modal')">+ New Record</button>
+  </div> 
+
+  <div id="content">
+
+    <!-- ════ DASHBOARD ════ -->
+    <!-- Original dashboard panel - no longer used -->
+    <div class="panel" id="panel-dashboard" style="display:none">
+      <div class="stats-grid">
+        <div class="stat-card blue"><div class="stat-icon">🏠</div><div class="stat-value">248</div><div class="stat-label">Total Lots</div><div class="stat-change">↑ 3 new this year</div></div>
+        <div class="stat-card cyan"><div class="stat-icon">👨‍👩‍👧</div><div class="stat-value">192</div><div class="stat-label">Occupied Units</div><div class="stat-change">77.4% occupancy</div></div>
+        <div class="stat-card green"><div class="stat-icon">💳</div><div class="stat-value">₱84k</div><div class="stat-label">Dues Collected</div><div class="stat-change">↑ 12% vs last month</div></div>
+        <div class="stat-card red"><div class="stat-icon">⚠️</div><div class="stat-value">7</div><div class="stat-label">Overdue Accounts</div><div class="stat-change">Needs follow-up</div></div>
+        <div class="stat-card yellow"><div class="stat-icon">🚗</div><div class="stat-value">24</div><div class="stat-label">Visitors Today</div><div class="stat-change">3 currently inside</div></div>
+        <div class="stat-card purple"><div class="stat-icon">🚨</div><div class="stat-value">2</div><div class="stat-label">Open Incidents</div><div class="stat-change">1 high priority</div></div>
+      </div>
+
+      <div class="grid-2-1">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">🗺️ Villa Purita Subdivision Map Overview</div>
+            <button class="btn btn-ghost" onclick="showPanel('map',document.querySelector('[onclick*=\'map\']'))">Full Map</button>
+          </div>
+          <div style="height:280px;" id="dash-map"></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">🔴 Live Alerts</div></div>
+          <div class="card-body">
+            <div class="alert alert-red"><span class="alert-icon">🚨</span><div><strong>Incident #024</strong><br>Suspicious person — Block C Lot 12<br><span style="font-size:10px;color:#f87171">5 mins ago</span></div></div>
+            <div class="alert alert-yellow"><span class="alert-icon">⚠️</span><div><strong>Overdue Dues</strong><br>Block B Lot 7 — 3 months<br><span style="font-size:10px;color:#fbbf24">1 hr ago</span></div></div>
+            <div class="alert alert-blue"><span class="alert-icon">🔔</span><div><strong>Visitor Entry</strong><br>Delivery at Gate 1 — Block A Lot 3<br><span style="font-size:10px;color:#93c5fd">Just now</span></div></div>
+            <div class="alert alert-green"><span class="alert-icon">✅</span><div><strong>Payment Confirmed</strong><br>Block D Lot 22 — June dues paid<br><span style="font-size:10px;color:#6ee7b7">20 mins ago</span></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header"><div class="card-title">👥 Recent Residents</div><button class="btn btn-ghost" onclick="showPanel('residents',document.querySelector('[onclick*=residents]'))">View All</button></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Name</th><th>Block/Lot</th><th>Since</th><th>Status</th></tr></thead>
+              <tbody>
+                <tr><td class="td-name">Santos, Maria</td><td>B-A / L-03</td><td>2020</td><td><span class="badge badge-green"><span class="badge-dot"></span>Active</span></td></tr>
+                <tr><td class="td-name">Reyes, Juan</td><td>B-B / L-07</td><td>2018</td><td><span class="badge badge-green"><span class="badge-dot"></span>Active</span></td></tr>
+                <tr><td class="td-name">Cruz, Ana</td><td>B-C / L-12</td><td>2022</td><td><span class="badge badge-yellow"><span class="badge-dot"></span>Pending</span></td></tr>
+                <tr><td class="td-name">Dela Torre, Ben</td><td>B-D / L-01</td><td>2025</td><td><span class="badge badge-blue"><span class="badge-dot"></span>New</span></td></tr>
+                <tr><td class="td-name">Lim, Grace</td><td>B-A / L-11</td><td>2019</td><td><span class="badge badge-green"><span class="badge-dot"></span>Active</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">🚗 Today's Visitor Log</div><button class="btn btn-ghost" onclick="showPanel('visitors',document.querySelector('[onclick*=visitors]'))">View All</button></div>
+          <div class="card-body" style="padding:10px 16px;">
+            <div class="visitor-row"><div class="visitor-avatar">📦</div><div class="visitor-info"><div class="visitor-name">Lazada Delivery</div><div class="visitor-detail">Block A Lot 3 • ID: LZD-0934 • IN: 9:12am</div></div><span class="badge badge-green">Inside</span></div>
+            <div class="visitor-row"><div class="visitor-avatar">🧑</div><div class="visitor-info"><div class="visitor-name">Ramos, Carlo</div><div class="visitor-detail">Block B Lot 7 • Guest • IN: 8:45am OUT: 10:30am</div></div><span class="badge badge-blue">Left</span></div>
+            <div class="visitor-row"><div class="visitor-avatar">🔧</div><div class="visitor-info"><div class="visitor-name">Meralco Technician</div><div class="visitor-detail">Block C Lot 5 • Utility • IN: 10:00am</div></div><span class="badge badge-yellow">Inside</span></div>
+            <div class="visitor-row"><div class="visitor-avatar">🍕</div><div class="visitor-info"><div class="visitor-name">Jollibee Delivery</div><div class="visitor-detail">Block D Lot 22 • Food Del. • IN: 11:02am OUT: 11:08am</div></div><span class="badge badge-blue">Left</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:14px">
+        <div class="card-header"><div class="card-title">💰 Dues Collection Progress — June 2025</div></div>
+        <div class="card-body">
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;">
+            <div><div style="display:flex;justify-content:space-between;font-size:12px;"><span>Block A</span><span style="color:var(--green)">87%</span></div><div class="progress-bar"><div class="progress-fill" style="width:87%;background:var(--green)"></div></div></div>
+            <div><div style="display:flex;justify-content:space-between;font-size:12px;"><span>Block B</span><span style="color:var(--yellow)">62%</span></div><div class="progress-bar"><div class="progress-fill" style="width:62%;background:var(--yellow)"></div></div></div>
+            <div><div style="display:flex;justify-content:space-between;font-size:12px;"><span>Block C</span><span style="color:var(--accent)">74%</span></div><div class="progress-bar"><div class="progress-fill" style="width:74%;background:var(--accent)"></div></div></div>
+            <div><div style="display:flex;justify-content:space-between;font-size:12px;"><span>Block D</span><span style="color:var(--red)">41%</span></div><div class="progress-bar"><div class="progress-fill" style="width:41%;background:var(--red)"></div></div></div>
+          </div>
+        </div>
+      </div>
+    </div><!-- /dashboard -->
+
+    <!-- ════ ADMIN DASHBOARD ════ -->
+    <div class="panel" id="panel-dashboard-admin">
+      <div class="stats-grid">
+        <div class="stat-card blue"><div class="stat-icon">🏠</div><div class="stat-value">248</div><div class="stat-label">Total Lots</div><div class="stat-change">↑ 3 new this year</div></div>
+        <div class="stat-card cyan"><div class="stat-icon">👨‍👩‍👧</div><div class="stat-value">192</div><div class="stat-label">Occupied Units</div><div class="stat-change">77.4% occupancy</div></div>
+        <div class="stat-card green"><div class="stat-icon">💳</div><div class="stat-value">₱84k</div><div class="stat-label">Dues Collected</div><div class="stat-change">↑ 12% vs last month</div></div>
+        <div class="stat-card red"><div class="stat-icon">⚠️</div><div class="stat-value">7</div><div class="stat-label">Overdue Accounts</div><div class="stat-change">Needs follow-up</div></div>
+        <div class="stat-card yellow"><div class="stat-icon">🚗</div><div class="stat-value">24</div><div class="stat-label">Visitors Today</div><div class="stat-change">3 currently inside</div></div>
+        <div class="stat-card purple"><div class="stat-icon">🚨</div><div class="stat-value">2</div><div class="stat-label">Open Incidents</div><div class="stat-change">1 high priority</div></div>
+      </div>
+
+      <div class="grid-2-1">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">🗺️ Villa Purita Subdivision Map Overview</div>
+            <button class="btn btn-ghost" onclick="showPanel('map',document.querySelector('[onclick*=\'map\']'))">Full Map</button>
+          </div>
+          <div style="height:280px;" id="admin-dash-map"></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">🔴 System Alerts & Management</div></div>
+          <div class="card-body">
+            <div class="alert alert-red"><span class="alert-icon">🚨</span><div><strong>Incident #024</strong><br>Suspicious person — Block C Lot 12<br><span style="font-size:10px;color:#f87171">5 mins ago</span></div></div>
+            <div class="alert alert-yellow"><span class="alert-icon">⚠️</span><div><strong>Overdue Dues</strong><br>Block B Lot 7 — 3 months<br><span style="font-size:10px;color:#fbbf24">1 hr ago</span></div></div>
+            <div class="alert alert-blue"><span class="alert-icon">🔔</span><div><strong>Visitor Entry</strong><br>Delivery at Gate 1 — Block A Lot 3<br><span style="font-size:10px;color:#93c5fd">Just now</span></div></div>
+            <div class="alert alert-green"><span class="alert-icon">✅</span><div><strong>Payment Confirmed</strong><br>Block D Lot 22 — June dues paid<br><span style="font-size:10px;color:#6ee7b7">20 mins ago</span></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header"><div class="card-title">👥 User Management Overview</div><button class="btn btn-ghost" onclick="showPanel('users',document.querySelector('[onclick*=users]'))">Manage Users</button></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Name</th><th>Role</th><th>Status</th><th>Last Login</th></tr></thead>
+              <tbody>
+                <tr><td class="td-name">Admin User</td><td>Administrator</td><td><span class="badge badge-green"><span class="badge-dot"></span>Active</span></td><td>Just now</td></tr>
+                <tr><td class="td-name">Guard One</td><td>Guard</td><td><span class="badge badge-green"><span class="badge-dot"></span>Active</span></td><td>2 hrs ago</td></tr>
+                <tr><td class="td-name">Santos, Maria</td><td>Homeowner</td><td><span class="badge badge-green"><span class="badge-dot"></span>Active</span></td><td>1 day ago</td></tr>
+                <tr><td class="td-name">Reyes, Juan</td><td>Homeowner</td><td><span class="badge badge-yellow"><span class="badge-dot"></span>Pending</span></td><td>Never</td></tr>
+                <tr><td class="td-name">Cruz, Ana</td><td>Homeowner</td><td><span class="badge badge-blue"><span class="badge-dot"></span>New</span></td><td>3 days ago</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">📊 System Reports</div><button class="btn btn-ghost" onclick="showPanel('reports',document.querySelector('[onclick*=reports]'))">View Reports</button></div>
+          <div class="card-body" style="padding:10px 16px;">
+            <div class="report-item"><div class="report-icon">💰</div><div class="report-info"><div class="report-title">Monthly Dues Report</div><div class="report-desc">June 2025 collection summary</div></div><span class="badge badge-green">Ready</span></div>
+            <div class="report-item"><div class="report-icon">🚗</div><div class="report-info"><div class="report-title">Visitor Analytics</div><div class="report-desc">Weekly visitor patterns</div></div><span class="badge badge-blue">Processing</span></div>
+            <div class="report-item"><div class="report-icon">🚨</div><div class="report-info"><div class="report-title">Security Incidents</div><div class="report-desc">Q2 incident summary</div></div><span class="badge badge-yellow">Pending</span></div>
+            <div class="report-item"><div class="report-icon">📈</div><div class="report-info"><div class="report-title">Occupancy Trends</div><div class="report-desc">Year-over-year analysis</div></div><span class="badge badge-green">Ready</span></div>
+          </div>
+        </div>
+      </div>
+    </div><!-- /admin-dashboard -->
+
+    <!-- ════ GUARD DASHBOARD ════ -->
+    <div class="panel" id="panel-dashboard-guard">
+      <div class="stats-grid">
+        <div class="stat-card blue"><div class="stat-icon">🚗</div><div class="stat-value">24</div><div class="stat-label">Visitors Today</div><div class="stat-change">3 currently inside</div></div>
+        <div class="stat-card red"><div class="stat-icon">🚨</div><div class="stat-value">2</div><div class="stat-label">Open Incidents</div><div class="stat-change">1 high priority</div></div>
+        <div class="stat-card yellow"><div class="stat-icon">⏰</div><div class="stat-value">08:45</div><div class="stat-label">Shift Start</div><div class="stat-change">On duty</div></div>
+        <div class="stat-card green"><div class="stat-icon">✅</div><div class="stat-value">156</div><div class="stat-label">Entries Logged</div><div class="stat-change">Today</div></div>
+      </div>
+
+      <div class="grid-2-1">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">🗺️ Guard Patrol Map</div>
+            <button class="btn btn-ghost" onclick="showPanel('guard',document.querySelector('[onclick*=\'guard\']'))">Guard Console</button>
+          </div>
+          <div style="height:280px;" id="guard-dash-map"></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">🚨 Active Alerts</div></div>
+          <div class="card-body">
+            <div class="alert alert-red"><span class="alert-icon">🚨</span><div><strong>Incident #024</strong><br>Suspicious person — Block C Lot 12<br><span style="font-size:10px;color:#f87171">5 mins ago</span></div></div>
+            <div class="alert alert-yellow"><span class="alert-icon">⚠️</span><div><strong>Visitor Check-in</strong><br>Delivery waiting at Gate 1<br><span style="font-size:10px;color:#fbbf24">Just now</span></div></div>
+            <div class="alert alert-blue"><span class="alert-icon">🔔</span><div><strong>Gate Access</strong><br>Resident returning — Block A Lot 3<br><span style="font-size:10px;color:#93c5fd">2 mins ago</span></div></div>
+            <div class="alert alert-green"><span class="alert-icon">✅</span><div><strong>Incident Resolved</strong><br>False alarm — Block B Lot 7<br><span style="font-size:10px;color:#6ee7b7">15 mins ago</span></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header"><div class="card-title">🚗 Current Visitors</div><button class="btn btn-ghost" onclick="showPanel('visitors',document.querySelector('[onclick*=visitors]'))">Visitor Log</button></div>
+          <div class="card-body" style="padding:10px 16px;">
+            <div class="visitor-row"><div class="visitor-avatar">📦</div><div class="visitor-info"><div class="visitor-name">Lazada Delivery</div><div class="visitor-detail">Block A Lot 3 • ID: LZD-0934 • IN: 9:12am</div></div><span class="badge badge-green">Inside</span></div>
+            <div class="visitor-row"><div class="visitor-avatar">🧑</div><div class="visitor-info"><div class="visitor-name">Ramos, Carlo</div><div class="visitor-detail">Block B Lot 7 • Guest • IN: 8:45am OUT: 10:30am</div></div><span class="badge badge-blue">Left</span></div>
+            <div class="visitor-row"><div class="visitor-avatar">🔧</div><div class="visitor-info"><div class="visitor-name">Meralco Technician</div><div class="visitor-detail">Block C Lot 5 • Utility • IN: 10:00am</div></div><span class="badge badge-yellow">Inside</span></div>
+            <div class="visitor-row"><div class="visitor-avatar">🍕</div><div class="visitor-info"><div class="visitor-name">Jollibee Delivery</div><div class="visitor-detail">Block D Lot 22 • Food Del. • IN: 11:02am OUT: 11:08am</div></div><span class="badge badge-blue">Left</span></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">🚨 Recent Incidents</div><button class="btn btn-ghost" onclick="showPanel('incidents',document.querySelector('[onclick*=incidents]'))">View All</button></div>
+          <div class="card-body" style="padding:10px 16px;">
+            <div class="incident-row"><div class="incident-icon">🚨</div><div class="incident-info"><div class="incident-title">Suspicious Person</div><div class="incident-detail">Block C Lot 12 • High Priority • 5 mins ago</div></div><span class="badge badge-red">Active</span></div>
+            <div class="incident-row"><div class="incident-icon">🔍</div><div class="incident-info"><div class="incident-title">Noise Complaint</div><div class="incident-detail">Block B Lot 7 • Medium • 1 hr ago</div></div><span class="badge badge-yellow">Investigating</span></div>
+            <div class="incident-row"><div class="incident-icon">✅</div><div class="incident-info"><div class="incident-title">False Alarm</div><div class="incident-detail">Block A Lot 3 • Low • 2 hrs ago</div></div><span class="badge badge-green">Resolved</span></div>
+            <div class="incident-row"><div class="incident-icon">🚗</div><div class="incident-info"><div class="incident-title">Unauthorized Parking</div><div class="incident-detail">Block D Lot 22 • Low • 3 hrs ago</div></div><span class="badge badge-blue">Logged</span></div>
+          </div>
+        </div>
+      </div>
+    </div><!-- /guard-dashboard -->
+
+    <!-- ════ HOMEOWNER DASHBOARD ════ -->
+    <div class="panel" id="panel-dashboard-homeowner">
+      <div class="stats-grid">
+        <div class="stat-card blue"><div class="stat-icon">🏠</div><div class="stat-value">B-A / L-03</div><div class="stat-label">Your Property</div><div class="stat-change">Villa Purita</div></div>
+        <div class="stat-card green"><div class="stat-icon">💳</div><div class="stat-value">₱2,500</div><div class="stat-label">Monthly Dues</div><div class="stat-change">Paid - June 2025</div></div>
+        <div class="stat-card yellow"><div class="stat-icon">🚗</div><div class="stat-value">2</div><div class="stat-label">Your Visitors</div><div class="stat-change">Currently inside</div></div>
+        <div class="stat-card purple"><div class="stat-icon">📢</div><div class="stat-value">3</div><div class="stat-label">New Announcements</div><div class="stat-change">This week</div></div>
+      </div>
+
+      <div class="grid-2-1">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">🗺️ Your Neighborhood</div>
+            <button class="btn btn-ghost" onclick="showPanel('map',document.querySelector('[onclick*=\'map\']'))">Full Map</button>
+          </div>
+          <div style="height:280px;" id="homeowner-dash-map"></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">📢 Community Announcements</div></div>
+          <div class="card-body">
+            <div class="alert alert-blue"><span class="alert-icon">📢</span><div><strong>Monthly Meeting</strong><br>Homeowners Association meeting on June 15th<br><span style="font-size:10px;color:#93c5fd">2 days ago</span></div></div>
+            <div class="alert alert-green"><span class="alert-icon">🎉</span><div><strong>Community Event</strong><br>Block party scheduled for June 20th<br><span style="font-size:10px;color:#6ee7b7">1 week ago</span></div></div>
+            <div class="alert alert-yellow"><span class="alert-icon">🚧</span><div><strong>Road Maintenance</strong><br>Block A road repairs starting Monday<br><span style="font-size:10px;color:#fbbf24">3 days ago</span></div></div>
+            <div class="alert alert-purple"><span class="alert-icon">💡</span><div><strong>Power Outage</strong><br>Scheduled maintenance on June 25th<br><span style="font-size:10px;color:#c084fc">1 week ago</span></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header"><div class="card-title">💰 Your Payment History</div><button class="btn btn-ghost" onclick="showPanel('dues',document.querySelector('[onclick*=dues]'))">View Details</button></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Month</th><th>Amount</th><th>Status</th><th>Date Paid</th></tr></thead>
+              <tbody>
+                <tr><td>June 2025</td><td>₱2,500</td><td><span class="badge badge-green"><span class="badge-dot"></span>Paid</span></td><td>June 1</td></tr>
+                <tr><td>May 2025</td><td>₱2,500</td><td><span class="badge badge-green"><span class="badge-dot"></span>Paid</span></td><td>May 3</td></tr>
+                <tr><td>April 2025</td><td>₱2,500</td><td><span class="badge badge-green"><span class="badge-dot"></span>Paid</span></td><td>April 1</td></tr>
+                <tr><td>March 2025</td><td>₱2,500</td><td><span class="badge badge-yellow"><span class="badge-dot"></span>Partial</span></td><td>March 15</td></tr>
+                <tr><td>February 2025</td><td>₱2,500</td><td><span class="badge badge-green"><span class="badge-dot"></span>Paid</span></td><td>Feb 28</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">🚗 Your Recent Visitors</div><button class="btn btn-ghost" onclick="showPanel('visitors',document.querySelector('[onclick*=visitors]'))">View All</button></div>
+          <div class="card-body" style="padding:10px 16px;">
+            <div class="visitor-row"><div class="visitor-avatar">📦</div><div class="visitor-info"><div class="visitor-name">Lazada Delivery</div><div class="visitor-detail">Your property • Package delivery • IN: 9:12am</div></div><span class="badge badge-green">Inside</span></div>
+            <div class="visitor-row"><div class="visitor-avatar">🧑</div><div class="visitor-info"><div class="visitor-name">Ramos, Carlo</div><div class="visitor-detail">Your property • Guest • IN: 8:45am OUT: 10:30am</div></div><span class="badge badge-blue">Left</span></div>
+            <div class="visitor-row"><div class="visitor-avatar">🔧</div><div class="visitor-info"><div class="visitor-name">Meralco Technician</div><div class="visitor-detail">Block C Lot 5 • Utility work • IN: 10:00am</div></div><span class="badge badge-yellow">Inside</span></div>
+            <div class="visitor-row"><div class="visitor-avatar">🍕</div><div class="visitor-info"><div class="visitor-name">Jollibee Delivery</div><div class="visitor-detail">Block D Lot 22 • Food delivery • IN: 11:02am OUT: 11:08am</div></div><span class="badge badge-blue">Left</span></div>
+          </div>
+        </div>
+      </div>
+    </div><!-- /homeowner-dashboard -->
+
+    <!-- ════ MAP PANEL ════ -->
+    <div class="panel" id="panel-map">
+      <div class="grid-1-2" style="height:calc(100vh - 120px);">
+        <div style="display:flex;flex-direction:column;gap:14px;overflow-y:auto;">
+          <div class="card">
+            <div class="card-header"><div class="card-title">🔍 House Search</div></div>
+            <div class="card-body">
+              <div class="form-group">
+                <label class="form-label">Search by Name or Block/Lot</label>
+                <input class="form-input" placeholder="e.g. Santos or Block A Lot 3" oninput="mapSearch(this.value)" id="map-search-input">
+              </div>
+              <div id="map-search-results"></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><div class="card-title">📌 Selected Property</div></div>
+            <div class="card-body" id="map-detail">
+              <div style="color:var(--text3);font-size:12px;text-align:center;padding:20px 0;">Click a marker or search to view property details</div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><div class="card-title">🎨 Map Legend</div></div>
+            <div class="card-body">
+              <div style="display:flex;flex-direction:column;gap:8px;font-size:12px;">
+                <div style="display:flex;align-items:center;gap:8px;"><div style="width:14px;height:14px;border-radius:3px;background:#10b981;flex-shrink:0;"></div>Occupied — Active</div>
+                <div style="display:flex;align-items:center;gap:8px;"><div style="width:14px;height:14px;border-radius:3px;background:#f59e0b;flex-shrink:0;"></div>Occupied — Dues Pending</div>
+                <div style="display:flex;align-items:center;gap:8px;"><div style="width:14px;height:14px;border-radius:3px;background:#ef4444;flex-shrink:0;"></div>Incident / Alert Active</div>
+                <div style="display:flex;align-items:center;gap:8px;"><div style="width:14px;height:14px;border-radius:3px;background:#3b82f6;flex-shrink:0;"></div>Visitor Expected</div>
+                <div style="display:flex;align-items:center;gap:8px;"><div style="width:14px;height:14px;border-radius:3px;background:#475569;flex-shrink:0;"></div>Vacant Lot</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card" style="height:100%;">
+          <div class="card-header"><div class="card-title">🗺️ Interactive Villa Purita Subdivision Map</div><span style="font-size:11px;color:var(--text3)">Powered by OpenStreetMap / Leaflet</span></div>
+          <div style="height:calc(100% - 50px);" id="full-map"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ RESIDENTS ════ -->
+    <div class="panel" id="panel-residents">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <div><div style="font-family:'Syne',sans-serif;font-weight:700;font-size:18px;">Resident Records</div><div style="font-size:12px;color:var(--text2);">192 occupied units registered</div></div>
+        <div style="display:flex;gap:8px;"><button class="btn btn-ghost">Export CSV</button><button class="btn btn-primary" onclick="openModal('add-resident-modal')">+ Add Resident</button></div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <input class="form-input" placeholder="🔍  Filter residents..." style="width:280px;padding:7px 12px;">
+          <div style="display:flex;gap:6px;">
+            <select class="form-input" style="width:130px;padding:7px 10px;"><option>All Blocks</option><option>Block A</option><option>Block B</option><option>Block C</option><option>Block D</option></select>
+            <select class="form-input" style="width:140px;padding:7px 10px;"><option>All Status</option><option>Active</option><option>Pending</option><option>Inactive</option></select>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>#</th><th>Resident Name</th><th>Block</th><th>Lot</th><th>Since</th><th>Contact</th><th>Status</th><th>Dues</th><th>Actions</th></tr></thead>
+            <tbody id="residents-tbody">
+              <tr><td>001</td><td class="td-name">Santos, Maria Luisa</td><td>Block A</td><td>Lot 03</td><td>2020</td><td>Admin only</td><td><span class="badge badge-green">Active</span></td><td><span class="badge badge-green">Paid</span></td><td><button class="btn btn-ghost" style="padding:4px 8px;font-size:11px;">View</button></td></tr>
+              <tr><td>002</td><td class="td-name">Reyes, Juan Carlo</td><td>Block B</td><td>Lot 07</td><td>2018</td><td>Admin only</td><td><span class="badge badge-green">Active</span></td><td><span class="badge badge-red">Overdue</span></td><td><button class="btn btn-ghost" style="padding:4px 8px;font-size:11px;">View</button></td></tr>
+              <tr><td>003</td><td class="td-name">Cruz, Ana Beatriz</td><td>Block C</td><td>Lot 12</td><td>2022</td><td>Admin only</td><td><span class="badge badge-yellow">Pending</span></td><td><span class="badge badge-yellow">Partial</span></td><td><button class="btn btn-ghost" style="padding:4px 8px;font-size:11px;">View</button></td></tr>
+              <tr><td>004</td><td class="td-name">Dela Torre, Benedicto</td><td>Block D</td><td>Lot 01</td><td>2025</td><td>Admin only</td><td><span class="badge badge-blue">New</span></td><td><span class="badge badge-blue">N/A</span></td><td><button class="btn btn-ghost" style="padding:4px 8px;font-size:11px;">View</button></td></tr>
+              <tr><td>005</td><td class="td-name">Lim, Grace Angeline</td><td>Block A</td><td>Lot 11</td><td>2019</td><td>Admin only</td><td><span class="badge badge-green">Active</span></td><td><span class="badge badge-green">Paid</span></td><td><button class="btn btn-ghost" style="padding:4px 8px;font-size:11px;">View</button></td></tr>
+              <tr><td>006</td><td class="td-name">Garcia, Roberto Jr.</td><td>Block B</td><td>Lot 15</td><td>2021</td><td>Admin only</td><td><span class="badge badge-green">Active</span></td><td><span class="badge badge-green">Paid</span></td><td><button class="btn btn-ghost" style="padding:4px 8px;font-size:11px;">View</button></td></tr>
+              <tr><td>007</td><td class="td-name">Mendoza, Patricia</td><td>Block C</td><td>Lot 08</td><td>2023</td><td>Admin only</td><td><span class="badge badge-green">Active</span></td><td><span class="badge badge-red">Overdue</span></td><td><button class="btn btn-ghost" style="padding:4px 8px;font-size:11px;">View</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div style="padding:12px 16px;display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--border);">
+          <span style="font-size:12px;color:var(--text2);">Showing 7 of 192 residents</span>
+          <div style="display:flex;gap:6px;"><button class="btn btn-ghost">← Prev</button><button class="btn btn-primary">Next →</button></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ BLOCK & LOT ════ -->
+    <div class="panel" id="panel-blocklot">
+      <div style="margin-bottom:16px;font-family:'Syne',sans-serif;font-weight:700;font-size:18px;">Block & Lot Management</div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header"><div class="card-title">🏗️ Block Overview</div></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Block</th><th>Total Lots</th><th>Occupied</th><th>Vacant</th><th>Occupancy</th></tr></thead>
+              <tbody>
+                <tr><td class="td-name">Block A</td><td>62</td><td>54</td><td>8</td><td><div style="display:flex;align-items:center;gap:8px;"><div class="progress-bar" style="width:80px;"><div class="progress-fill" style="width:87%;background:var(--green)"></div></div>87%</div></td></tr>
+                <tr><td class="td-name">Block B</td><td>58</td><td>46</td><td>12</td><td><div style="display:flex;align-items:center;gap:8px;"><div class="progress-bar" style="width:80px;"><div class="progress-fill" style="width:79%;background:var(--accent)"></div></div>79%</div></td></tr>
+                <tr><td class="td-name">Block C</td><td>74</td><td>52</td><td>22</td><td><div style="display:flex;align-items:center;gap:8px;"><div class="progress-bar" style="width:80px;"><div class="progress-fill" style="width:70%;background:var(--yellow)"></div></div>70%</div></td></tr>
+                <tr><td class="td-name">Block D</td><td>54</td><td>40</td><td>14</td><td><div style="display:flex;align-items:center;gap:8px;"><div class="progress-bar" style="width:80px;"><div class="progress-fill" style="width:74%;background:var(--yellow)"></div></div>74%</div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">📋 Lot Details — Block A</div><select class="form-input" style="width:130px;padding:6px 10px;"><option>Block A</option><option>Block B</option><option>Block C</option><option>Block D</option></select></div>
+          <div class="table-wrap" style="max-height:260px;overflow-y:auto;">
+            <table>
+              <thead><tr><th>Lot #</th><th>Area (sqm)</th><th>Resident</th><th>Status</th></tr></thead>
+              <tbody>
+                <tr><td>Lot 01</td><td>120</td><td class="td-name">Villanueva, J.</td><td><span class="badge badge-green">Occupied</span></td></tr>
+                <tr><td>Lot 02</td><td>100</td><td style="color:var(--text3)">—</td><td><span class="badge" style="background:rgba(71,85,105,.2);color:#94a3b8;border:1px solid #334155;">Vacant</span></td></tr>
+                <tr><td>Lot 03</td><td>120</td><td class="td-name">Santos, M.</td><td><span class="badge badge-green">Occupied</span></td></tr>
+                <tr><td>Lot 04</td><td>140</td><td class="td-name">Aquino, P.</td><td><span class="badge badge-yellow">Pending</span></td></tr>
+                <tr><td>Lot 05</td><td>120</td><td class="td-name">Bautista, C.</td><td><span class="badge badge-green">Occupied</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ VISITORS ════ -->
+    <div class="panel" id="panel-visitors">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <div><div style="font-family:'Syne',sans-serif;font-weight:700;font-size:18px;">Visitor Entry & Monitoring</div><div style="font-size:12px;color:var(--text2);">3 visitors currently inside</div></div>
+        <button class="btn btn-primary" onclick="openModal('add-visitor-modal')">+ Log Visitor</button>
+      </div>
+      <div class="stats-grid" style="grid-template-columns:repeat(4,1fr);">
+        <div class="stat-card cyan"><div class="stat-icon">🚗</div><div class="stat-value">24</div><div class="stat-label">Total Today</div></div>
+        <div class="stat-card green"><div class="stat-icon">✅</div><div class="stat-value">21</div><div class="stat-label">Logged Out</div></div>
+        <div class="stat-card yellow"><div class="stat-icon">⏳</div><div class="stat-value">3</div><div class="stat-label">Still Inside</div></div>
+        <div class="stat-card blue"><div class="stat-icon">📦</div><div class="stat-value">11</div><div class="stat-label">Deliveries</div></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title">📋 Visitor Log</div><input class="form-input" placeholder="🔍 Search visitor..." style="width:220px;padding:7px 12px;"></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Log #</th><th>Visitor Name</th><th>Purpose</th><th>Visiting</th><th>ID Deposited</th><th>Time In</th><th>Time Out</th><th>Status</th><th>Guard</th></tr></thead>
+            <tbody>
+              <tr><td>V-001</td><td class="td-name">Lazada Courier</td><td>Delivery</td><td>Block A Lot 3</td><td>License</td><td>9:12 AM</td><td>—</td><td><span class="badge badge-green">Inside</span></td><td>Guard Cruz</td></tr>
+              <tr><td>V-002</td><td class="td-name">Ramos, Carlo</td><td>Guest Visit</td><td>Block B Lot 7</td><td>PhilSys ID</td><td>8:45 AM</td><td>10:30 AM</td><td><span class="badge badge-blue">Left</span></td><td>Guard Dela Cruz</td></tr>
+              <tr><td>V-003</td><td class="td-name">Meralco Technician</td><td>Utility Service</td><td>Block C Lot 5</td><td>Company ID</td><td>10:00 AM</td><td>—</td><td><span class="badge badge-yellow">Inside</span></td><td>Guard Cruz</td></tr>
+              <tr><td>V-004</td><td class="td-name">Jollibee Rider</td><td>Food Delivery</td><td>Block D Lot 22</td><td>License</td><td>11:02 AM</td><td>11:08 AM</td><td><span class="badge badge-blue">Left</span></td><td>Guard Dela Cruz</td></tr>
+              <tr><td>V-005</td><td class="td-name">Aquino, Lita</td><td>Family Visit</td><td>Block A Lot 11</td><td>PhilSys ID</td><td>7:30 AM</td><td>9:00 AM</td><td><span class="badge badge-blue">Left</span></td><td>Guard Malit</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ DUES ════ -->
+    <div class="panel" id="panel-dues">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <div><div style="font-family:'Syne',sans-serif;font-weight:700;font-size:18px;">Dues & Payment — Bayranan Module</div><div style="font-size:12px;color:var(--text2);">June 2025 billing cycle</div></div>
+        <div style="display:flex;gap:8px;"><button class="btn btn-ghost">Export Report</button><button class="btn btn-primary" onclick="openModal('add-payment-modal')">+ Record Payment</button></div>
+      </div>
+      <div class="stats-grid" style="grid-template-columns:repeat(4,1fr);">
+        <div class="stat-card green"><div class="stat-icon">✅</div><div class="stat-value">145</div><div class="stat-label">Paid</div><div class="stat-change">₱72,500 collected</div></div>
+        <div class="stat-card red"><div class="stat-icon">❌</div><div class="stat-value">7</div><div class="stat-label">Overdue</div><div class="stat-change">₱3,500 pending</div></div>
+        <div class="stat-card yellow"><div class="stat-icon">⏳</div><div class="stat-value">40</div><div class="stat-label">Unpaid</div><div class="stat-change">Due this month</div></div>
+        <div class="stat-card blue"><div class="stat-icon">💰</div><div class="stat-value">₱500</div><div class="stat-label">Monthly Rate</div><div class="stat-change">Per household</div></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title">💳 Payment Records</div><select class="form-input" style="width:140px;padding:7px 10px;"><option>All Status</option><option>Paid</option><option>Unpaid</option><option>Overdue</option></select></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Ref #</th><th>Resident</th><th>Block/Lot</th><th>Month</th><th>Amount</th><th>Date Paid</th><th>Method</th><th>Status</th><th>Action</th></tr></thead>
+            <tbody>
+              <tr><td>PAY-001</td><td class="td-name">Santos, Maria</td><td>A / 03</td><td>June 2025</td><td>₱500</td><td>Jun 1</td><td>GCash</td><td><span class="badge badge-green">Paid</span></td><td><button class="btn btn-ghost" style="padding:4px 8px;font-size:11px;">Receipt</button></td></tr>
+              <tr><td>PAY-002</td><td class="td-name">Reyes, Juan</td><td>B / 07</td><td>Apr–Jun</td><td>₱1,500</td><td>—</td><td>—</td><td><span class="badge badge-red">Overdue</span></td><td><button class="btn btn-ghost" style="padding:4px 8px;font-size:11px;">Remind</button></td></tr>
+              <tr><td>PAY-003</td><td class="td-name">Cruz, Ana</td><td>C / 12</td><td>June 2025</td><td>₱250</td><td>Jun 5</td><td>Cash</td><td><span class="badge badge-yellow">Partial</span></td><td><button class="btn btn-ghost" style="padding:4px 8px;font-size:11px;">Confirm</button></td></tr>
+              <tr><td>PAY-004</td><td class="td-name">Lim, Grace</td><td>A / 11</td><td>June 2025</td><td>₱500</td><td>Jun 3</td><td>Bank Transfer</td><td><span class="badge badge-green">Paid</span></td><td><button class="btn btn-ghost" style="padding:4px 8px;font-size:11px;">Receipt</button></td></tr>
+              <tr><td>PAY-005</td><td class="td-name">Mendoza, P.</td><td>C / 08</td><td>May–Jun</td><td>₱1,000</td><td>—</td><td>—</td><td><span class="badge badge-red">Overdue</span></td><td><button class="btn btn-ghost" style="padding:4px 8px;font-size:11px;">Remind</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ INCIDENTS ════ -->
+    <div class="panel" id="panel-incidents">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <div><div style="font-family:'Syne',sans-serif;font-weight:700;font-size:18px;">Security Alerts & Incidents</div><div style="font-size:12px;color:var(--text2);">2 active open incidents</div></div>
+        <button class="btn btn-danger" onclick="openModal('incident-modal')">🚨 Report Incident</button>
+      </div>
+      <div class="grid-2">
+        <div>
+          <div class="alert alert-red" style="margin-bottom:10px;"><span class="alert-icon">🚨</span><div style="flex:1;"><div style="display:flex;justify-content:space-between;"><strong>INC-024 — HIGH</strong><span class="badge badge-red">Open</span></div><div>Suspicious person loitering near Block C Lot 12</div><div style="font-size:11px;color:#f87171;margin-top:4px;">Reported by: Santos, Maria • 5 mins ago • Guard: Cruz</div></div></div>
+          <div class="alert alert-yellow" style="margin-bottom:10px;"><span class="alert-icon">⚠️</span><div style="flex:1;"><div style="display:flex;justify-content:space-between;"><strong>INC-023 — MED</strong><span class="badge badge-yellow">In Progress</span></div><div>Noise complaint — Block B Lot 7, late night</div><div style="font-size:11px;color:#fbbf24;margin-top:4px;">Reported by: Reyes, Juan • Yesterday 11pm</div></div></div>
+          <div class="alert alert-green" style="margin-bottom:10px;"><span class="alert-icon">✅</span><div style="flex:1;"><div style="display:flex;justify-content:space-between;"><strong>INC-022 — LOW</strong><span class="badge badge-blue">Resolved</span></div><div>Stray dog — Block A entrance cleared</div><div style="font-size:11px;color:#6ee7b7;margin-top:4px;">Resolved by: Guard Dela Cruz • Jun 4</div></div></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">📊 Incident History</div></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>ID</th><th>Type</th><th>Location</th><th>Priority</th><th>Status</th></tr></thead>
+              <tbody>
+                <tr><td>INC-024</td><td>Suspicious</td><td>C / 12</td><td><span class="badge badge-red">High</span></td><td><span class="badge badge-red">Open</span></td></tr>
+                <tr><td>INC-023</td><td>Noise</td><td>B / 07</td><td><span class="badge badge-yellow">Med</span></td><td><span class="badge badge-yellow">In Prog</span></td></tr>
+                <tr><td>INC-022</td><td>Animal</td><td>Gate 1</td><td><span class="badge badge-blue">Low</span></td><td><span class="badge badge-blue">Resolved</span></td></tr>
+                <tr><td>INC-021</td><td>Vandalism</td><td>D / 05</td><td><span class="badge badge-yellow">Med</span></td><td><span class="badge badge-blue">Resolved</span></td></tr>
+                <tr><td>INC-020</td><td>Theft</td><td>A / 09</td><td><span class="badge badge-red">High</span></td><td><span class="badge badge-blue">Resolved</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ ANNOUNCEMENTS ════ -->
+    <div class="panel" id="panel-announcements">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <div><div style="font-family:'Syne',sans-serif;font-weight:700;font-size:18px;">Announcements & Events</div></div>
+        <button class="btn btn-primary announcement-add-btn" id="announcement-add-btn" onclick="openModal('announcement-modal')">+ New Announcement</button>
+      </div>
+      <div class="grid-2">
+        <div>
+          <div class="card" style="margin-bottom:14px;">
+            <div class="card-header"><div class="card-title">📢 Active Announcements</div></div>
+            <div class="card-body">
+              <div style="border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:10px;">
+                <div style="display:flex;justify-content:space-between;margin-bottom:6px;"><strong style="font-size:13px;">Water Interruption Notice</strong><span class="badge badge-red">Urgent</span></div>
+                <div style="font-size:12px;color:var(--text2);margin-bottom:8px;">Scheduled water service interruption on June 10, 2025, 8AM–5PM. Please store water in advance.</div>
+                <div style="font-size:11px;color:var(--text3);">Posted by Admin • June 6, 2025 • Sent to all homeowners</div>
+              </div>
+              <div style="border:1px solid var(--border);border-radius:10px;padding:14px;">
+                <div style="display:flex;justify-content:space-between;margin-bottom:6px;"><strong style="font-size:13px;">Monthly Meeting — June 15</strong><span class="badge badge-blue">Event</span></div>
+                <div style="font-size:12px;color:var(--text2);margin-bottom:8px;">HOA Monthly Meeting at the Clubhouse, 7PM. Agenda includes road repair updates and security improvements.</div>
+                <div style="font-size:11px;color:var(--text3);">Posted by Admin • June 5, 2025 • 145 notified</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">📅 Event Calendar</div></div>
+          <div class="card-body">
+            <div class="timeline">
+              <div class="tl-item"><div class="tl-dot" style="background:var(--red)"></div><div class="tl-time">Jun 10</div><div class="tl-text"><strong>Water Interruption</strong> — All day</div></div>
+              <div class="tl-item"><div class="tl-dot" style="background:var(--accent)"></div><div class="tl-time">Jun 15</div><div class="tl-text"><strong>HOA Monthly Meeting</strong> — Clubhouse 7PM</div></div>
+              <div class="tl-item"><div class="tl-dot" style="background:var(--green)"></div><div class="tl-time">Jun 20</div><div class="tl-text"><strong>Community Clean-up Day</strong> — 7AM–12NN</div></div>
+              <div class="tl-item"><div class="tl-dot" style="background:var(--yellow)"></div><div class="tl-time">Jun 25</div><div class="tl-text"><strong>Dues Deadline</strong> — June billing</div></div>
+              <div class="tl-item"><div class="tl-dot" style="background:var(--purple)"></div><div class="tl-time">Jun 30</div><div class="tl-text"><strong>Mid-year Report</strong> — Admin review</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ USERS ════ -->
+    <div class="panel" id="panel-users">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <div><div style="font-family:'Syne',sans-serif;font-weight:700;font-size:18px;">User & Access Management</div></div>
+        <button class="btn btn-primary" onclick="openModal('add-user-modal')">+ Add User</button>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title">👤 System Users</div></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>ID</th><th>Username</th><th>Full Name</th><th>Role</th><th>Last Login</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody>
+              <tr><td>USR-001</td><td class="td-name">admin</td><td>HOA Administrator</td><td><span class="badge badge-purple">Administrator</span></td><td>Today 9:00 AM</td><td><span class="badge badge-green">Active</span></td><td><button class="btn btn-ghost" style="padding:4px 8px;font-size:11px;">Edit</button></td></tr>
+              <tr><td>USR-002</td><td class="td-name">guard_cruz</td><td>Cruz, Pedro</td><td><span class="badge badge-blue">Guard</span></td><td>Today 8:00 AM</td><td><span class="badge badge-green">Active</span></td><td><button class="btn btn-ghost" style="padding:4px 8px;font-size:11px;">Edit</button></td></tr>
+              <tr><td>USR-003</td><td class="td-name">guard_delacruz</td><td>Dela Cruz, Ramon</td><td><span class="badge badge-blue">Guard</span></td><td>Today 6:00 AM</td><td><span class="badge badge-green">Active</span></td><td><button class="btn btn-ghost" style="padding:4px 8px;font-size:11px;">Edit</button></td></tr>
+              <tr><td>USR-004</td><td class="td-name">santos_ma</td><td>Santos, Maria</td><td><span class="badge badge-green">Homeowner</span></td><td>Jun 5</td><td><span class="badge badge-green">Active</span></td><td><button class="btn btn-ghost" style="padding:4px 8px;font-size:11px;">Edit</button></td></tr>
+              <tr><td>USR-005</td><td class="td-name">reyes_jc</td><td>Reyes, Juan Carlo</td><td><span class="badge badge-green">Homeowner</span></td><td>Jun 3</td><td><span class="badge badge-yellow">Inactive</span></td><td><button class="btn btn-success btn-ghost" style="padding:4px 8px;font-size:11px;">Activate</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ REPORTS ════ -->
+    <div class="panel" id="panel-reports">
+      <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:18px;margin-bottom:16px;">Reports & Records</div>
+      <div class="grid-2">
+        <div class="card" style="cursor:pointer;" onclick="alert('Generating Resident List Report...')"><div class="card-body" style="display:flex;align-items:center;gap:16px;"><div style="width:50px;height:50px;background:rgba(59,130,246,.15);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;">👥</div><div><div style="font-weight:600;font-size:14px;">Resident List Report</div><div style="font-size:12px;color:var(--text2);">Complete list of all registered residents with block/lot details</div></div><div style="margin-left:auto;font-size:20px;color:var(--text3);">→</div></div></div>
+        <div class="card" style="cursor:pointer;" onclick="alert('Generating Visitor Logs Report...')"><div class="card-body" style="display:flex;align-items:center;gap:16px;"><div style="width:50px;height:50px;background:rgba(6,182,212,.15);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;">🚗</div><div><div style="font-weight:600;font-size:14px;">Visitor Logs Report</div><div style="font-size:12px;color:var(--text2);">Daily/monthly visitor entry and exit records</div></div><div style="margin-left:auto;font-size:20px;color:var(--text3);">→</div></div></div>
+        <div class="card" style="cursor:pointer;" onclick="alert('Generating Dues Collection Report...')"><div class="card-body" style="display:flex;align-items:center;gap:16px;"><div style="width:50px;height:50px;background:rgba(16,185,129,.15);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;">💰</div><div><div style="font-weight:600;font-size:14px;">Dues Collection Report</div><div style="font-size:12px;color:var(--text2);">Monthly collection summary, paid/unpaid/overdue breakdown</div></div><div style="margin-left:auto;font-size:20px;color:var(--text3);">→</div></div></div>
+        <div class="card" style="cursor:pointer;" onclick="alert('Generating Incident Summary Report...')"><div class="card-body" style="display:flex;align-items:center;gap:16px;"><div style="width:50px;height:50px;background:rgba(239,68,68,.15);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;">🚨</div><div><div style="font-weight:600;font-size:14px;">Incident Summary Report</div><div style="font-size:12px;color:var(--text2);">Security incidents, alerts, and resolution status</div></div><div style="margin-left:auto;font-size:20px;color:var(--text3);">→</div></div></div>
+        <div class="card" style="cursor:pointer;" onclick="alert('Generating Activity Monitor Report...')"><div class="card-body" style="display:flex;align-items:center;gap:16px;"><div style="width:50px;height:50px;background:rgba(139,92,246,.15);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;">📋</div><div><div style="font-weight:600;font-size:14px;">Activity Monitoring Log</div><div style="font-size:12px;color:var(--text2);">System access and action audit trail</div></div><div style="margin-left:auto;font-size:20px;color:var(--text3);">→</div></div></div>
+        <div class="card" style="cursor:pointer;" onclick="alert('Generating Block & Lot Report...')"><div class="card-body" style="display:flex;align-items:center;gap:16px;"><div style="width:50px;height:50px;background:rgba(245,158,11,.15);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;">🏗️</div><div><div style="font-weight:600;font-size:14px;">Block & Lot Status Report</div><div style="font-size:12px;color:var(--text2);">Occupancy rates, vacant lots, property details</div></div><div style="margin-left:auto;font-size:20px;color:var(--text3);">→</div></div></div>
+      </div>
+    </div>
+
+    <!-- ════ GUARD CONSOLE ════ -->
+    <div class="panel" id="panel-guard">
+      <div style="margin-bottom:16px;font-family:'Syne',sans-serif;font-weight:700;font-size:18px;">🛡️ Guard Operations Console</div>
+      <div class="grid-1-2" style="min-height:500px;">
+        <div style="display:flex;flex-direction:column;gap:14px;">
+          <div class="card">
+            <div class="card-header"><div class="card-title">🔍 Quick House Finder</div></div>
+            <div class="card-body">
+              <input class="form-input" placeholder="Name, Block, or Lot..." style="margin-bottom:10px;" oninput="guardSearch(this.value)" id="guard-search">
+              <div id="guard-results"></div>
+              <div style="font-size:11px;color:var(--text3);margin-top:8px;">💡 Helps guide riders, delivery, and guests to correct house</div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><div class="card-title">🚨 Log Visitor Now</div></div>
+            <div class="card-body">
+              <div class="form-group"><label class="form-label">Visitor Name</label><input class="form-input" placeholder="Full name"></div>
+              <div class="form-group"><label class="form-label">Visiting</label><input class="form-input" placeholder="Block & Lot or Resident name"></div>
+              <div class="form-row">
+                <div class="form-group"><label class="form-label">Purpose</label><select class="form-input"><option>Guest</option><option>Delivery</option><option>Utility</option><option>Other</option></select></div>
+                <div class="form-group"><label class="form-label">ID Deposited</label><input class="form-input" placeholder="ID type"></div>
+              </div>
+              <button class="btn btn-success" style="width:100%;">✓ Log Entry</button>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><div class="card-title">⚡ Quick Actions</div></div>
+            <div class="card-body" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+              <button class="btn btn-danger" style="padding:10px;" onclick="openModal('incident-modal')">🚨 Alert</button>
+              <button class="btn btn-ghost" style="padding:10px;">📞 Call Admin</button>
+              <button class="btn btn-ghost" style="padding:10px;">🔒 Lock Gate</button>
+              <button class="btn btn-ghost" style="padding:10px;">📋 Shift Log</button>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">🗺️ Guard Navigation Map</div><span style="font-size:11px;color:var(--text3);">Villa Purita Subdivision - Click markers to navigate</span></div>
+          <div style="height:calc(100% - 50px);" id="guard-map"></div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<!-- ═══ MODALS ═══ -->
+<!-- Quick Add Modal -->
+<div class="modal-overlay" id="add-modal">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">+ New Record</div><div class="modal-close" onclick="closeModal('add-modal')">✕</div></div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:var(--text2);margin-bottom:16px;">Select the type of record to add:</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div class="role-btn" onclick="closeModal('add-modal');openModal('add-resident-modal')"><span class="ri">👥</span>New Resident</div>
+        <div class="role-btn" onclick="closeModal('add-modal');openModal('add-visitor-modal')"><span class="ri">🚗</span>Log Visitor</div>
+        <div class="role-btn" onclick="closeModal('add-modal');openModal('add-payment-modal')"><span class="ri">💰</span>Record Payment</div>
+        <div class="role-btn" onclick="closeModal('add-modal');openModal('incident-modal')"><span class="ri">🚨</span>Report Incident</div>
+        <div class="role-btn" onclick="closeModal('add-modal');openModal('announcement-modal')"><span class="ri">📢</span>Post Announcement</div>
+        <div class="role-btn" onclick="closeModal('add-modal');openModal('add-user-modal')"><span class="ri">🔑</span>Add User</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add Resident Modal -->
+<div class="modal-overlay" id="add-resident-modal">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">👥 Add New Resident</div><div class="modal-close" onclick="closeModal('add-resident-modal')">✕</div></div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">First Name *</label><input class="form-input" id="res-fname" placeholder="First name"></div>
+        <div class="form-group"><label class="form-label">Last Name *</label><input class="form-input" id="res-lname" placeholder="Last name"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Block *</label><select class="form-input" id="res-block"><option>Block A</option><option>Block B</option><option>Block C</option><option>Block D</option></select></div>
+        <div class="form-group"><label class="form-label">Lot Number *</label><input class="form-input" id="res-lot" placeholder="e.g. 03"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Year of Residency</label><input class="form-input" id="res-year" type="number" placeholder="2025"></div>
+        <div class="form-group"><label class="form-label">Occupancy Status</label><select class="form-input" id="res-occ"><option>Owner</option><option>Tenant</option><option>Co-owner</option></select></div>
+      </div>
+      <div class="form-group"><label class="form-label">Contact Number (Admin Only)</label><input class="form-input" id="res-contact" placeholder="+63..."></div>
+      <div id="res-error" style="color:var(--red);font-size:12px;margin-top:4px;display:none;"></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('add-resident-modal')">Cancel</button><button class="btn btn-primary" onclick="saveResident()">Save Resident</button></div>
+  </div>
+</div>
+
+<!-- Log Visitor Modal -->
+<div class="modal-overlay" id="add-visitor-modal">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">🚗 Log Visitor Entry</div><div class="modal-close" onclick="closeModal('add-visitor-modal')">✕</div></div>
+    <div class="modal-body">
+      <div class="form-group"><label class="form-label">Visitor Full Name *</label><input class="form-input" id="vis-name" placeholder="Full name of visitor"></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Visiting Block *</label><select class="form-input" id="vis-block"><option>Block A</option><option>Block B</option><option>Block C</option><option>Block D</option></select></div>
+        <div class="form-group"><label class="form-label">Lot Number *</label><input class="form-input" id="vis-lot" placeholder="e.g. 03"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Purpose of Visit</label><select class="form-input" id="vis-purpose"><option>Guest Visit</option><option>Delivery</option><option>Utility/Repair</option><option>Business</option><option>Family</option><option>Other</option></select></div>
+        <div class="form-group"><label class="form-label">ID Type Deposited *</label><input class="form-input" id="vis-id-type" placeholder="e.g. PhilSys ID"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">ID Number</label><input class="form-input" id="vis-id-num" placeholder="ID number (optional)"></div>
+        <div class="form-group"><label class="form-label">Vehicle Plate</label><input class="form-input" id="vis-plate" placeholder="e.g. ABC 1234"></div>
+      </div>
+      <div id="vis-error" style="color:var(--red);font-size:12px;margin-top:4px;display:none;"></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('add-visitor-modal')">Cancel</button><button class="btn btn-success" onclick="saveVisitor()">✓ Log Entry</button></div>
+  </div>
+</div>
+
+<!-- Payment Modal -->
+<div class="modal-overlay" id="add-payment-modal">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">💰 Record Payment</div><div class="modal-close" onclick="closeModal('add-payment-modal')">✕</div></div>
+    <div class="modal-body">
+      <div class="form-group"><label class="form-label">Resident *</label><select class="form-input" id="pay-resident"></select></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Billing Month *</label><input class="form-input" type="month" id="pay-month" value="2025-06"></div>
+        <div class="form-group"><label class="form-label">Amount (₱) *</label><input class="form-input" id="pay-amount" placeholder="500.00" type="number" value="500"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Payment Method</label><select class="form-input" id="pay-method"><option>Cash</option><option>GCash</option><option>Bank Transfer</option><option>Check</option><option>Other</option></select></div>
+        <div class="form-group"><label class="form-label">Reference No.</label><input class="form-input" id="pay-ref" placeholder="Transaction ref"></div>
+      </div>
+      <div class="form-group"><label class="form-label">Notes</label><textarea class="form-input" id="pay-notes" rows="2" placeholder="Optional notes..."></textarea></div>
+      <div id="pay-error" style="color:var(--red);font-size:12px;margin-top:4px;display:none;"></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('add-payment-modal')">Cancel</button><button class="btn btn-primary" onclick="savePayment()">✓ Confirm Payment</button></div>
+  </div>
+</div>
+
+<!-- Incident Modal -->
+<div class="modal-overlay" id="incident-modal">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">🚨 Report Incident / Alert</div><div class="modal-close" onclick="closeModal('incident-modal')">✕</div></div>
+    <div class="modal-body">
+      <div class="alert alert-red" style="margin-bottom:14px;"><span class="alert-icon">⚡</span><strong>This will immediately notify all guards on duty.</strong></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Incident Type *</label><select class="form-input" id="inc-type"><option>Suspicious Activity</option><option>Theft/Robbery</option><option>Fire</option><option>Medical Emergency</option><option>Vandalism</option><option>Noise Complaint</option><option>Unauthorized Entry</option><option>Other</option></select></div>
+        <div class="form-group"><label class="form-label">Priority</label><select class="form-input" id="inc-priority"><option value="High">High — Emergency</option><option value="Medium" selected>Medium</option><option value="Low">Low</option></select></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Location — Block</label><select class="form-input" id="inc-block"><option>Block A</option><option>Block B</option><option>Block C</option><option>Block D</option><option>Gate/Entrance</option></select></div>
+        <div class="form-group"><label class="form-label">Lot Number</label><input class="form-input" id="inc-lot" placeholder="e.g. 12 (optional)"></div>
+      </div>
+      <div class="form-group"><label class="form-label">Description *</label><textarea class="form-input" id="inc-desc" rows="3" placeholder="Describe the incident in detail..."></textarea></div>
+      <div id="inc-error" style="color:var(--red);font-size:12px;margin-top:4px;display:none;"></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('incident-modal')">Cancel</button><button class="btn btn-danger" onclick="saveIncident()">🚨 Send Alert</button></div>
+  </div>
+</div>
+
+<!-- Announcement Modal -->
+<div class="modal-overlay" id="announcement-modal">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">📢 Post Announcement</div><div class="modal-close" onclick="closeModal('announcement-modal')">✕</div></div>
+    <div class="modal-body">
+      <div class="form-group"><label class="form-label">Title *</label><input class="form-input" id="ann-title" placeholder="Announcement title"></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Category</label><select class="form-input" id="ann-category"><option>General</option><option>Urgent</option><option>Event</option><option>Maintenance</option><option>Payment Reminder</option></select></div>
+        <div class="form-group"><label class="form-label">Notify</label><select class="form-input" id="ann-notify"><option>All Homeowners</option><option>Block A Only</option><option>Block B Only</option><option>Block C Only</option><option>Block D Only</option><option>All Users</option></select></div>
+      </div>
+      <div class="form-group"><label class="form-label">Content *</label><textarea class="form-input" id="ann-content" rows="4" placeholder="Write announcement content..."></textarea></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Post Date</label><input class="form-input" type="date" id="ann-postdate"></div>
+        <div class="form-group"><label class="form-label">Expiry Date</label><input class="form-input" type="date" id="ann-expiry"></div>
+      </div>
+      <div id="ann-error" style="color:var(--red);font-size:12px;margin-top:4px;display:none;"></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('announcement-modal')">Cancel</button><button class="btn btn-primary" onclick="saveAnnouncement()">📢 Post & Notify</button></div>
+  </div>
+</div>
+
+<!-- Add User Modal -->
+<div class="modal-overlay" id="add-user-modal">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">🔑 Add System User</div><div class="modal-close" onclick="closeModal('add-user-modal')">✕</div></div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">First Name *</label><input class="form-input" id="usr-fname" placeholder="First"></div>
+        <div class="form-group"><label class="form-label">Last Name *</label><input class="form-input" id="usr-lname" placeholder="Last"></div>
+      </div>
+      <div class="form-group"><label class="form-label">Username *</label><input class="form-input" id="usr-username" placeholder="e.g. juan_reyes"></div>
+      <div class="form-group"><label class="form-label">Role *</label><select class="form-input" id="usr-role"><option>Administrator</option><option>Guard</option><option>Homeowner</option></select></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Password *</label><input class="form-input" type="password" id="usr-pass" placeholder="Set password"></div>
+        <div class="form-group"><label class="form-label">Confirm Password *</label><input class="form-input" type="password" id="usr-pass2" placeholder="Confirm"></div>
+      </div>
+      <div class="form-group"><label class="form-label">Account Status</label><select class="form-input" id="usr-status"><option>Active</option><option>Inactive</option></select></div>
+      <div id="usr-error" style="color:var(--red);font-size:12px;margin-top:4px;display:none;"></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('add-user-modal')">Cancel</button><button class="btn btn-primary" onclick="saveUser()">✓ Create Account</button></div>
+  </div>
+</div>
+
+<!-- View Resident Modal -->
+<div class="modal-overlay" id="view-resident-modal">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">👤 Resident Details</div><div class="modal-close" onclick="closeModal('view-resident-modal')">✕</div></div>
+    <div class="modal-body" id="view-resident-body"></div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('view-resident-modal')">Close</button></div>
+  </div>
+</div>
+
+<!-- Search Modal -->
+<div class="modal-overlay" id="search-modal" onclick="if(event.target===this)closeModal('search-modal')">
+  <div class="modal" style="width:600px;">
+    <div class="modal-header"><div class="modal-title">🔍 Quick Search</div><div class="modal-close" onclick="closeModal('search-modal')">✕</div></div>
+    <div class="modal-body">
+      <input class="form-input" placeholder="Search residents, visitors, incidents..." style="font-size:14px;padding:11px;" oninput="globalSearch(this.value)" id="global-search-input">
+      <div id="global-search-results" style="margin-top:12px;max-height:380px;overflow-y:auto;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast container -->
+<div id="toast-container" style="position:fixed;bottom:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:8px;"></div>
+
+
+<script>
+// ══════════════════════════════════════════════════════════════════════════════
+// VILLA PURITA — FRONTEND  (Database-connected via REST API)
+// All CRUD → /api/* endpoints.  Falls back gracefully if API unavailable.
+// ══════════════════════════════════════════════════════════════════════════════
+
+const API = 'api'; // No leading slash!        // Change to your server path if needed
+const CENTER = [10.258089561887017, 123.8020430653793];
+
+// ─── Session ─────────────────────────────────────────────────────────────────
+let SESSION = { role:'', username:'', name:'', userId:0, loggedIn:false };
+
+// ─── Map instances ────────────────────────────────────────────────────────────
+let dashMap=null, fullMap=null, guardMap=null;
+let fullMapMarkers=[], guardMapMarkers=[];
+
+// ─── Local state (filled from API) ────────────────────────────────────────────
+let STATE = {
+  residents:[], visitors:[], payments:[], incidents:[],
+  announcements:[], users:[], dashStats:{}
+};
+
+// ══════════════════════════════════════════════════════════════════════════════
+// API HELPER
+// ══════════════════════════════════════════════════════════════════════════════
+async function api(path, method='GET', body=null) {
+  const opts = { method, credentials:'include', headers:{'Content-Type':'application/json'} };
+  if (body) opts.body = JSON.stringify(body);
+  try {
+    const res = await fetch(API + path, opts);
+    const json = await res.json();
+    if (!json.success) throw new Error(json.error || 'API error');
+    return json.data;
+  } catch(e) {
+    console.error('API error:', path, e.message);
+    throw e;
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// TOAST
+// ══════════════════════════════════════════════════════════════════════════════
+function toast(msg, type='success') {
+  const C = {success:'#10b981', error:'#ef4444', info:'#3b82f6', warning:'#f59e0b'};
+  const I = {success:'✅', error:'❌', info:'🔔', warning:'⚠️'};
+  const el = document.createElement('div');
+  el.style.cssText = `background:var(--card);border:1px solid var(--border);border-left:4px solid ${C[type]};
+    border-radius:10px;padding:12px 16px;font-size:12px;display:flex;align-items:center;gap:10px;
+    box-shadow:0 8px 24px rgba(0,0,0,.4);animation:toastIn .25s ease;min-width:280px;max-width:360px;`;
+  el.innerHTML = `<span style="font-size:16px">${I[type]}</span><span style="flex:1;line-height:1.4">${msg}</span>`;
+  document.getElementById('toast-container').appendChild(el);
+  setTimeout(() => { el.style.animation='toastOut .3s ease forwards'; setTimeout(()=>el.remove(),300); }, 3500);
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// AUTH
+// ══════════════════════════════════════════════════════════════════════════════
+let selectedRole = 'Administrator';
+
+function selectRole(role, el) {
+  selectedRole = role;
+  document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+async function doLogin() {
+  const username = document.getElementById('login-user')?.value.trim();
+  const password = document.getElementById('login-pass')?.value;
+  if (!username || !password) { showLoginError('Enter username and password.'); return; }
+  const btn = document.querySelector('.login-card .btn-primary');
+  btn.textContent = 'Signing in…'; btn.disabled = true;
+  try {
+    const user = await api('/auth/login', 'POST', { username, password });
+    if (user.role !== selectedRole) {
+      showLoginError(`This account is a ${user.role}, not ${selectedRole}.`);
+      btn.textContent = 'Sign In →'; btn.disabled = false; return;
+    }
+    SESSION = { role:user.role, username:user.username, name:user.full_name, userId:user.user_id, loggedIn:true };
+    await completeLogin(user);
+  } catch(e) {
+    showLoginError(e.message || 'Login failed.');
+    btn.textContent = 'Sign In →'; btn.disabled = false;
+  }
+}
+
+function showLoginError(msg) {
+  let el = document.getElementById('login-error-msg');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'login-error-msg';
+    el.style.cssText='color:var(--red);font-size:12px;margin-bottom:12px;padding:9px;background:rgba(239,68,68,.1);border-radius:7px;text-align:center;border:1px solid rgba(239,68,68,.2)';
+    document.querySelector('.login-card .btn-primary').before(el);
+  }
+  el.textContent = msg; el.style.display = 'block';
+}
+
+async function completeLogin(user) {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('sidebar-role').textContent = user.role;
+  document.getElementById('sidebar-name').textContent = user.full_name || user.first_name + ' ' + user.last_name;
+  document.querySelector('.avatar').textContent = (user.first_name||user.full_name||'U')[0].toUpperCase();
+  applyRoleAccess(user.role);
+  // Load initial data
+  await loadAllData();
+  populatePaymentResidents();
+  // Show role dashboard
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  const dashId = user.role==='Administrator' ? 'panel-dashboard-admin'
+               : user.role==='Guard'         ? 'panel-dashboard-guard'
+                                              : 'panel-dashboard-homeowner';
+  document.getElementById(dashId)?.classList.add('active');
+  document.querySelector('[onclick*="dashboard"]')?.classList.add('active');
+  refreshDashboardStats();
+  setTimeout(initMaps, 400);
+  setInterval(pollLiveData, 30000); // refresh every 30s
+  updateBadges();
+}
+
+async function doLogout() {
+  if (!confirm('Sign out of Villa Purita Management System?')) return;
+  try { await api('/auth/logout', 'POST'); } catch(e) {}
+  SESSION.loggedIn = false;
+  destroyMaps();
+  STATE = { residents:[], visitors:[], payments:[], incidents:[], announcements:[], users:[], dashStats:{} };
+  document.getElementById('login-screen').style.display = 'flex';
+  const btn = document.querySelector('.login-card .btn-primary');
+  if (btn) { btn.textContent = 'Sign In →'; btn.disabled = false; }
+  if (document.getElementById('login-user')) document.getElementById('login-user').value = '';
+  if (document.getElementById('login-pass')) document.getElementById('login-pass').value = '';
+}
+
+function applyRoleAccess(role) {
+  document.querySelectorAll('.nav-item').forEach(el => el.style.display = '');
+  document.getElementById('new-record-btn').style.display = '';
+  const annBtn = document.getElementById('announcement-add-btn');
+  if (annBtn) annBtn.style.display = '';
+  if (role === 'Homeowner') {
+    document.querySelectorAll('.nav-admin,.nav-guard').forEach(el => el.style.display='none');
+    document.querySelectorAll('.nav-admin-section,.nav-guard-section').forEach(el => el.style.display='none');
+    document.getElementById('new-record-btn').style.display = 'none';
+    if (annBtn) annBtn.style.display = 'none';
+  } else if (role === 'Guard') {
+    document.querySelectorAll('.nav-admin:not(.nav-guard)').forEach(el => el.style.display='none');
+    document.querySelectorAll('.nav-admin-section').forEach(el => el.style.display='none');
+    document.getElementById('new-record-btn').style.display = 'none';
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// DATA LOADING
+// ══════════════════════════════════════════════════════════════════════════════
+async function loadAllData() {
+  const role = SESSION.role;
+  const tasks = [
+    api('/residents').then(d => STATE.residents = d || []).catch(()=>{}),
+    api('/visitors').then(d => STATE.visitors   = d || []).catch(()=>{}),
+    api('/dues').then(d     => STATE.payments   = d || []).catch(()=>{}),
+    api('/incidents').then(d => STATE.incidents = d || []).catch(()=>{}),
+    api('/announcements').then(d => STATE.announcements = d || []).catch(()=>{}),
+  ];
+  if (role === 'Administrator') {
+    tasks.push(api('/users').then(d => STATE.users = d || []).catch(()=>{}));
+  }
+  await Promise.allSettled(tasks);
+}
+
+async function pollLiveData() {
+  if (!SESSION.loggedIn) return;
+  try {
+    const [vis, inc] = await Promise.all([
+      api('/visitors'),
+      api('/incidents'),
+    ]);
+    STATE.visitors  = vis  || STATE.visitors;
+    STATE.incidents = inc  || STATE.incidents;
+    updateBadges();
+    refreshDashboardStats();
+  } catch(e) {}
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// PANELS
+// ══════════════════════════════════════════════════════════════════════════════
+function showPanel(id, el) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  let panelId = 'panel-' + id;
+  if (id === 'dashboard') {
+    panelId = SESSION.role==='Administrator' ? 'panel-dashboard-admin'
+            : SESSION.role==='Guard'         ? 'panel-dashboard-guard'
+                                             : 'panel-dashboard-homeowner';
+  }
+  document.getElementById(panelId)?.classList.add('active');
+  if (el) el.classList.add('active');
+  const titles = {
+    dashboard:'Dashboard', map:'Live Map', residents:'Residents', blocklot:'Block & Lot',
+    visitors:'Visitors', dues:'Dues & Payment', incidents:'Incidents',
+    announcements:'Announcements', users:'User Management', reports:'Reports', guard:'Guard Console'
+  };
+  document.querySelector('.topbar-title') &&
+    (document.querySelector('.topbar-title').innerHTML = (titles[id]||id) + ' <span>— Villa Purita</span>');
+
+  // Lazy-init maps
+  if (id==='map'   && !fullMap)   setTimeout(initFullMap, 200);
+  if (id==='guard' && !guardMap)  setTimeout(initGuardMap, 200);
+  if (id==='map'   && fullMap)    setTimeout(()=>fullMap.invalidateSize(), 100);
+  if (id==='guard' && guardMap)   setTimeout(()=>guardMap.invalidateSize(), 100);
+
+  // Render panels
+  if (id==='residents')     renderResidents();
+  if (id==='visitors')      renderVisitors();
+  if (id==='dues')          renderDues();
+  if (id==='incidents')     renderIncidents();
+  if (id==='announcements') renderAnnouncements();
+  if (id==='users')         renderUsers();
+  if (id==='reports')       renderReports();
+  if (id==='guard')         renderGuardVisitors();
+  if (id==='dashboard')     { refreshDashboardStats(); setTimeout(initMaps, 350); }
+}
+
+function openModal(id)  { document.getElementById(id)?.classList.add('open'); }
+function closeModal(id) { document.getElementById(id)?.classList.remove('open'); }
+document.addEventListener('keydown', e => {
+  if (e.key==='Escape') document.querySelectorAll('.modal-overlay.open').forEach(m=>m.classList.remove('open'));
+  if (e.ctrlKey && e.key==='k' && SESSION.loggedIn) {
+    e.preventDefault(); openModal('search-modal');
+    setTimeout(()=>document.getElementById('global-search-input')?.focus(), 100);
+  }
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
+// MAPS
+// ══════════════════════════════════════════════════════════════════════════════
+function makeIcon(color) {
+  return L.divIcon({
+    className:'',
+    html:`<div style="width:13px;height:13px;background:${color};border:2px solid rgba(255,255,255,.85);border-radius:3px;box-shadow:0 2px 6px rgba(0,0,0,.5);"></div>`,
+    iconSize:[13,13], iconAnchor:[6,6]
+  });
+}
+
+function resColor(r) {
+  const dues = r.dues_status || r.dues_status;
+  if (r.status==='Pending')   return '#f59e0b';
+  if (dues==='Overdue')       return '#ef4444';
+  if (dues==='Partial')       return '#f59e0b';
+  if (dues==='Paid')          return '#10b981';
+  return '#94a3b8';
+}
+
+const BLOCK_OFFSETS = {
+  'Block A': [+0.0012, +0.002], 'Block B': [+0.0022, -0.001],
+  'Block C': [-0.0012, +0.003], 'Block D': [-0.0022, -0.002],
+};
+function resCoords(r, i) {
+  const [dlat,dlng] = BLOCK_OFFSETS[r.block] || [0,0];
+  return [CENTER[0]+dlat+(i%4)*0.00025, CENTER[1]+dlng+Math.floor(i/4)*0.00025];
+}
+
+function popupHtml(r) {
+  const col = resColor(r);
+  return `<div style="font-family:'DM Sans',sans-serif;min-width:160px;padding:2px 0;">
+    <div style="font-weight:700;font-size:13px;">${r.last_name}, ${r.first_name}</div>
+    <div style="font-size:11px;color:#64748b;margin-bottom:6px;">${r.block} · Lot ${r.lot_number}</div>
+    <span style="padding:2px 7px;border-radius:4px;font-size:10px;font-weight:600;background:${col}22;color:${col};border:1px solid ${col}55;">${r.status}</span>
+    <span style="padding:2px 7px;border-radius:4px;font-size:10px;font-weight:600;background:${col}22;color:${col};border:1px solid ${col}55;margin-left:4px;">Dues:${r.dues_status||'?'}</span>
+  </div>`;
+}
+
+function tiles() {
+  return L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+    { attribution:'© OpenStreetMap © CARTO', subdomains:'abcd', maxZoom:20 });
+}
+
+function initMaps() {
+  const mapIds = {Administrator:'admin-dash-map', Guard:'guard-dash-map', Homeowner:'homeowner-dash-map'};
+  const mid = mapIds[SESSION.role];
+  const cont = mid && document.getElementById(mid);
+  if (cont && !cont._leaflet_id) {
+    dashMap = L.map(mid, {zoomControl:false, attributionControl:false}).setView(CENTER, 17);
+    tiles().addTo(dashMap);
+    STATE.residents.forEach((r,i) => {
+      L.marker(resCoords(r,i), {icon:makeIcon(resColor(r))}).addTo(dashMap).bindPopup(popupHtml(r));
+    });
+    addSubdivisionLabel(dashMap);
+  }
+}
+
+function initFullMap() {
+  if (fullMap) { fullMap.invalidateSize(); return; }
+  const cont = document.getElementById('full-map');
+  if (!cont) return;
+  fullMap = L.map('full-map', {zoomControl:true, attributionControl:false}).setView(CENTER, 17);
+  tiles().addTo(fullMap);
+  addSubdivisionLabel(fullMap);
+  STATE.residents.forEach((r,i) => {
+    const coords = resCoords(r,i);
+    const m = L.marker(coords, {icon:makeIcon(resColor(r))}).addTo(fullMap);
+    m.bindPopup(popupHtml(r));
+    m.on('click', () => showMapDetail(r, m, coords));
+    fullMapMarkers.push({r, m, coords});
+  });
+  // Active incident markers
+  STATE.incidents.filter(i=>i.status!=='Resolved').forEach(inc => {
+    const [dlat,dlng] = BLOCK_OFFSETS[inc.block] || [0,0];
+    L.marker([CENTER[0]+dlat, CENTER[1]+dlng], {
+      icon: L.divIcon({className:'', html:'<div style="width:16px;height:16px;background:#ef4444;border:2px solid #fff;border-radius:50%;box-shadow:0 0 8px #ef4444;animation:pulse 1.5s infinite;"></div>', iconSize:[16,16], iconAnchor:[8,8]})
+    }).addTo(fullMap).bindPopup(`<b>🚨 INC-${inc.id}</b><br>${inc.incident_type}<br>${inc.block}${inc.lot_number?' Lot '+inc.lot_number:''}`);
+  });
+}
+
+function initGuardMap() {
+  if (guardMap) { guardMap.invalidateSize(); return; }
+  const cont = document.getElementById('guard-map');
+  if (!cont) return;
+  guardMap = L.map('guard-map', {zoomControl:true, attributionControl:false}).setView(CENTER, 17);
+  tiles().addTo(guardMap);
+  addSubdivisionLabel(guardMap);
+  STATE.residents.forEach((r,i) => {
+    const coords = resCoords(r,i);
+    const m = L.marker(coords, {icon:makeIcon(resColor(r))}).addTo(guardMap);
+    m.bindPopup(`<b>${r.last_name}, ${r.first_name}</b><br>${r.block} · Lot ${r.lot_number}`);
+    guardMapMarkers.push({r, m, coords});
+  });
+}
+
+function addSubdivisionLabel(map) {
+  L.marker(CENTER, {icon:L.divIcon({className:'', iconAnchor:[60,12],
+    html:'<div style="background:rgba(59,130,246,.9);color:#fff;font-family:sans-serif;font-size:11px;font-weight:700;padding:4px 10px;border-radius:12px;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.4);">🏘️ Villa Purita</div>'
+  })}).addTo(map);
+}
+
+function destroyMaps() {
+  if (dashMap)  { dashMap.remove();  dashMap=null; }
+  if (fullMap)  { fullMap.remove();  fullMap=null;  fullMapMarkers=[]; }
+  if (guardMap) { guardMap.remove(); guardMap=null; guardMapMarkers=[]; }
+}
+
+function refreshMapMarkers() {
+  fullMapMarkers.forEach(({r,m}) => {
+    const updated = STATE.residents.find(x=>x.id===r.id);
+    if (updated) { r.dues_status=updated.dues_status; r.status=updated.status; }
+    m.setIcon(makeIcon(resColor(r)));
+  });
+  guardMapMarkers.forEach(({r,m}) => m.setIcon(makeIcon(resColor(r))));
+}
+
+function showMapDetail(r, m, coords) {
+  const col = resColor(r);
+  const bk = c => `<span style="padding:3px 8px;border-radius:5px;font-size:10px;font-weight:600;background:${c}22;color:${c};border:1px solid ${c}55;">`;
+  document.getElementById('map-detail').innerHTML = `
+    <div style="margin-bottom:12px;">
+      <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:15px;">${r.last_name}, ${r.first_name}</div>
+      <div style="font-size:12px;color:#94a3b8;">${r.block} · Lot ${r.lot_number} · Since ${r.year_of_residency}</div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
+      <div style="padding:9px;background:var(--bg3);border-radius:8px;border:1px solid var(--border);text-align:center;">
+        <div style="font-size:10px;color:var(--text3);margin-bottom:4px;">STATUS</div>${bk(col)}${r.status}</span>
+      </div>
+      <div style="padding:9px;background:var(--bg3);border-radius:8px;border:1px solid var(--border);text-align:center;">
+        <div style="font-size:10px;color:var(--text3);margin-bottom:4px;">DUES</div>${bk(col)}${r.dues_status||'Unpaid'}</span>
+      </div>
+    </div>
+    <div style="font-size:11px;color:var(--text3);margin-bottom:10px;">${r.occupancy_status} · ${SESSION.role==='Administrator'?(r.contact_number||'No contact'):'Admin only'}</div>
+    <button class="btn btn-primary" style="width:100%;font-size:12px;" onclick="highlightOnMap(${r.id})">📍 Highlight on Map</button>`;
+}
+
+function highlightOnMap(rid) {
+  const e = fullMapMarkers.find(m=>m.r.id===rid);
+  if (!e||!fullMap) return;
+  fullMap.setView(e.coords, 19, {animate:true});
+  e.m.setIcon(L.divIcon({className:'',html:'<div style="width:22px;height:22px;background:#3b82f6;border:3px solid #fff;border-radius:5px;box-shadow:0 0 14px #3b82f6;animation:pulse 1.5s infinite;"></div>',iconSize:[22,22],iconAnchor:[11,11]}));
+  e.m.openPopup();
+  setTimeout(()=>e.m.setIcon(makeIcon(resColor(e.r))), 3000);
+}
+
+function mapSearch(q) {
+  const res = document.getElementById('map-search-results');
+  if (!q||!res) { if(res) res.innerHTML=''; return; }
+  const matches = STATE.residents.filter(r => (r.first_name+' '+r.last_name+' '+r.block+' lot '+r.lot_number).toLowerCase().includes(q.toLowerCase()));
+  if (!matches.length) { res.innerHTML='<div style="font-size:12px;color:var(--text3);padding:8px 0">No results</div>'; return; }
+  res.innerHTML = matches.slice(0,6).map(r =>
+    `<div onclick="locateOnMap(${r.id})" style="padding:9px;border:1px solid var(--border);border-radius:8px;margin-bottom:6px;cursor:pointer;" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+      <div style="font-size:13px;font-weight:600;">${r.last_name}, ${r.first_name}</div>
+      <div style="font-size:11px;color:var(--text3);">${r.block} · Lot ${r.lot_number}</div>
+    </div>`).join('');
+}
+
+function locateOnMap(rid) {
+  const e = fullMapMarkers.find(m=>m.r.id===rid);
+  if (!e) return;
+  fullMap.setView(e.coords, 19, {animate:true});
+  e.m.openPopup();
+  showMapDetail(e.r, e.m, e.coords);
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// BADGE HELPERS
+// ══════════════════════════════════════════════════════════════════════════════
+function badge(text, cls) {
+  const map = {
+    Active:'badge-green', Paid:'badge-green', Inside:'badge-green', Resolved:'badge-blue',
+    Open:'badge-red', Overdue:'badge-red', Left:'badge-blue', Pending:'badge-yellow',
+    Partial:'badge-yellow', 'In Progress':'badge-yellow', Unpaid:'',
+    High:'badge-red', Medium:'badge-yellow', Low:'badge-blue', New:'badge-blue',
+    Administrator:'badge-purple', Guard:'badge-blue', Homeowner:'badge-green',
+    Active_user:'badge-green', Inactive:'badge-yellow',
+  };
+  const c = cls || map[text] || '';
+  return `<span class="badge ${c}"><span class="badge-dot"></span>${text}</span>`;
+}
+
+function updateBadges() {
+  const openInc = STATE.incidents.filter(i=>i.status==='Open').length;
+  const inside  = STATE.visitors.filter(v=>v.status==='Inside').length;
+  const overdue = STATE.payments.filter(p=>p.status==='Overdue').length;
+  document.querySelectorAll('.nav-item').forEach(item => {
+    const nb = item.querySelector('.nav-badge');
+    if (!nb) return;
+    if (item.getAttribute('onclick')?.includes('incidents')) nb.textContent = openInc||'';
+    if (item.getAttribute('onclick')?.includes('visitors'))  nb.textContent = inside||'';
+    if (item.getAttribute('onclick')?.includes('dues'))      nb.textContent = overdue||'';
+  });
+  const dot = document.querySelector('.notif-dot');
+  if (dot) dot.style.display = openInc>0 ? 'block' : 'none';
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// RESIDENTS
+// ══════════════════════════════════════════════════════════════════════════════
+function renderResidents() {
+  const tbody = document.getElementById('residents-tbody');
+  if (!tbody) return;
+  const list = STATE.residents;
+  tbody.innerHTML = list.map((r,i) => `
+    <tr>
+      <td>${String(i+1).padStart(3,'0')}</td>
+      <td class="td-name">${r.last_name}, ${r.first_name}</td>
+      <td>${r.block}</td>
+      <td>Lot ${r.lot_number}</td>
+      <td>${r.year_of_residency}</td>
+      <td style="font-size:11px;color:var(--text3);">${SESSION.role==='Administrator'?(r.contact_number||'—'):'Admin only'}</td>
+      <td>${badge(r.status)}</td>
+      <td>${badge(r.dues_status||'Unpaid')}</td>
+      <td style="display:flex;gap:4px;">
+        <button class="btn btn-ghost" style="padding:4px 8px;font-size:11px;" onclick="viewResident(${r.id})">View</button>
+        ${SESSION.role==='Administrator'?`<button class="btn btn-ghost" style="padding:4px 8px;font-size:11px;color:var(--red);" onclick="deleteResident(${r.id})">Remove</button>`:''}
+      </td>
+    </tr>`).join('') || '<tr><td colspan="9" style="text-align:center;padding:20px;color:var(--text3);">No residents found.</td></tr>';
+}
+
+async function viewResident(id) {
+  try {
+    const r = await api(`/residents/show?id=${id}`);
+    const pay = r.payment_history || [];
+    document.getElementById('view-resident-body').innerHTML = `
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
+        <div><label class="form-label">Full Name</label><div style="padding:8px 12px;background:var(--bg3);border-radius:8px;border:1px solid var(--border);font-size:13px;">${r.first_name} ${r.last_name}</div></div>
+        <div><label class="form-label">Block & Lot</label><div style="padding:8px 12px;background:var(--bg3);border-radius:8px;border:1px solid var(--border);font-size:13px;">${r.block} · Lot ${r.lot_number}</div></div>
+        <div><label class="form-label">Since</label><div style="padding:8px 12px;background:var(--bg3);border-radius:8px;border:1px solid var(--border);font-size:13px;">${r.year_of_residency}</div></div>
+        <div><label class="form-label">Occupancy</label><div style="padding:8px 12px;background:var(--bg3);border-radius:8px;border:1px solid var(--border);font-size:13px;">${r.occupancy_status}</div></div>
+        <div><label class="form-label">Status</label><div style="padding:8px 12px;background:var(--bg3);border-radius:8px;border:1px solid var(--border);">${badge(r.status)}</div></div>
+        ${SESSION.role==='Administrator'?`<div><label class="form-label">Contact</label><div style="padding:8px 12px;background:var(--bg3);border-radius:8px;border:1px solid var(--border);font-size:13px;">${r.contact_number||'—'}</div></div>`:''}
+      </div>
+      <label class="form-label">Payment History</label>
+      ${pay.length ? pay.map(p=>`<div style="padding:9px;background:var(--bg3);border-radius:8px;border:1px solid var(--border);margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;font-size:12px;">
+        <span>${p.billing_month}</span><span>₱${parseFloat(p.amount||0).toLocaleString()}</span><span>${p.payment_method||'—'}</span>${badge(p.status)}</div>`).join('') :
+      '<div style="color:var(--text3);font-size:12px;padding:10px 0;">No payment records.</div>'}`;
+    openModal('view-resident-modal');
+  } catch(e) { toast('Failed to load resident: ' + e.message, 'error'); }
+}
+
+async function saveResident() {
+  const fname   = document.getElementById('res-fname')?.value.trim();
+  const lname   = document.getElementById('res-lname')?.value.trim();
+  const block   = document.getElementById('res-block')?.value;
+  const lot     = document.getElementById('res-lot')?.value.trim();
+  const year    = document.getElementById('res-year')?.value || new Date().getFullYear();
+  const occ     = document.getElementById('res-occ')?.value;
+  const contact = document.getElementById('res-contact')?.value.trim();
+  const errEl   = document.getElementById('res-error');
+  if (!fname||!lname||!lot) { errEl.textContent='First name, last name and lot are required.'; errEl.style.display='block'; return; }
+  const btn = document.querySelector('#add-resident-modal .btn-primary');
+  btn.textContent='Saving…'; btn.disabled=true;
+  try {
+    await api('/residents', 'POST', { first_name:fname, last_name:lname, block, lot_number:lot, year_of_residency:parseInt(year), occupancy_status:occ, contact_number:contact||null });
+    closeModal('add-resident-modal');
+    ['res-fname','res-lname','res-lot','res-year','res-contact'].forEach(id=>{if(document.getElementById(id))document.getElementById(id).value='';});
+    errEl.style.display='none';
+    STATE.residents = await api('/residents');
+    populatePaymentResidents();
+    renderResidents(); refreshDashboardStats(); refreshMapMarkers();
+    toast(`✅ ${lname}, ${fname} added to ${block} Lot ${lot}!`);
+  } catch(e) { errEl.textContent=e.message; errEl.style.display='block'; }
+  btn.textContent='Save Resident'; btn.disabled=false;
+}
+
+async function deleteResident(id) {
+  const r = STATE.residents.find(x=>x.id===id);
+  if (!r||!confirm(`Remove ${r.last_name}, ${r.first_name}?`)) return;
+  try {
+    await api(`/residents?id=${id}`, 'DELETE');
+    STATE.residents = STATE.residents.filter(x=>x.id!==id);
+    renderResidents(); refreshDashboardStats(); populatePaymentResidents();
+    toast(`${r.last_name} removed.`, 'info');
+  } catch(e) { toast('Remove failed: '+e.message, 'error'); }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// VISITORS
+// ══════════════════════════════════════════════════════════════════════════════
+function renderVisitors() {
+  const tbody = document.querySelector('#panel-visitors table tbody');
+  if (!tbody) return;
+  tbody.innerHTML = STATE.visitors.map((v,i) => `
+    <tr>
+      <td>V-${String(v.id).padStart(3,'0')}</td>
+      <td class="td-name">${v.visitor_name}</td>
+      <td>${v.purpose}</td>
+      <td>${v.visiting_block} Lot ${v.visiting_lot}</td>
+      <td>${v.id_type||'—'}</td>
+      <td>${v.time_in_fmt||v.time_in||'—'}</td>
+      <td>${v.time_out_fmt||v.time_out||'<span style="color:var(--text3)">—</span>'}</td>
+      <td>${badge(v.status)}</td>
+      <td style="font-size:11px;color:var(--text3);">${v.guard_name||'Guard'}</td>
+      ${v.status==='Inside'?`<td><button class="btn btn-danger" style="padding:4px 8px;font-size:11px;" onclick="logExit(${v.id})">Log Exit</button></td>`:'<td></td>'}
+    </tr>`).join('') || '<tr><td colspan="10" style="text-align:center;padding:20px;color:var(--text3)">No visitors logged.</td></tr>';
+  // Update stats
+  const total   = STATE.visitors.length;
+  const inside  = STATE.visitors.filter(v=>v.status==='Inside').length;
+  const left    = STATE.visitors.filter(v=>v.status==='Left').length;
+  const deliver = STATE.visitors.filter(v=>v.purpose==='Delivery').length;
+  const sv = document.querySelectorAll('#panel-visitors .stat-value');
+  if(sv[0]) sv[0].textContent=total; if(sv[1]) sv[1].textContent=left;
+  if(sv[2]) sv[2].textContent=inside; if(sv[3]) sv[3].textContent=deliver;
+  updateBadges();
+}
+
+async function saveVisitor() {
+  const name    = document.getElementById('vis-name')?.value.trim();
+  const block   = document.getElementById('vis-block')?.value;
+  const lot     = document.getElementById('vis-lot')?.value.trim();
+  const purpose = document.getElementById('vis-purpose')?.value;
+  const idType  = document.getElementById('vis-id-type')?.value.trim();
+  const idNum   = document.getElementById('vis-id-num')?.value.trim();
+  const plate   = document.getElementById('vis-plate')?.value.trim();
+  const errEl   = document.getElementById('vis-error');
+  if (!name||!lot||!idType) { errEl.textContent='Name, lot, and ID type are required.'; errEl.style.display='block'; return; }
+  const btn = document.querySelector('#add-visitor-modal .btn-success');
+  btn.textContent='Logging…'; btn.disabled=true;
+  try {
+    await api('/visitors/entry', 'POST', { visitor_name:name, block, lot, purpose, id_type:idType, id_number:idNum||null, vehicle_plate:plate||null });
+    closeModal('add-visitor-modal');
+    ['vis-name','vis-lot','vis-id-type','vis-id-num','vis-plate'].forEach(id=>{if(document.getElementById(id))document.getElementById(id).value='';});
+    errEl.style.display='none';
+    STATE.visitors = await api('/visitors');
+    renderVisitors(); refreshDashboardStats(); updateBadges();
+    toast(`🚗 ${name} logged in — ${block} Lot ${lot}`);
+  } catch(e) { errEl.textContent=e.message; errEl.style.display='block'; }
+  btn.textContent='✓ Log Entry'; btn.disabled=false;
+}
+
+async function logExit(id) {
+  try {
+    await api('/visitors/exit', 'POST', { id });
+    STATE.visitors = await api('/visitors');
+    renderVisitors(); renderGuardVisitors(); updateBadges();
+    const v = STATE.visitors.find(x=>x.id===id);
+    toast(`${v?.visitor_name||'Visitor'} has exited.`, 'info');
+  } catch(e) { toast('Exit log failed: '+e.message, 'error'); }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// DUES & PAYMENTS
+// ══════════════════════════════════════════════════════════════════════════════
+function populatePaymentResidents() {
+  const sel = document.getElementById('pay-resident');
+  if (!sel) return;
+  sel.innerHTML = STATE.residents.map(r =>
+    `<option value="${r.id}">${r.last_name}, ${r.first_name} — ${r.block} Lot ${r.lot_number}</option>`
+  ).join('');
+}
+
+function renderDues() {
+  const tbody = document.querySelector('#panel-dues table tbody');
+  if (!tbody) return;
+  tbody.innerHTML = STATE.payments.map(p => `
+    <tr>
+      <td>PAY-${String(p.id).padStart(3,'0')}</td>
+      <td class="td-name">${p.last_name}, ${p.first_name}</td>
+      <td>${p.block} / ${p.lot_number}</td>
+      <td>${p.billing_month}</td>
+      <td>₱${parseFloat(p.amount||0).toLocaleString()}</td>
+      <td>${p.date_paid_fmt||p.date_paid||'<span style="color:var(--text3)">—</span>'}</td>
+      <td>${p.payment_method||'<span style="color:var(--text3)">—</span>'}</td>
+      <td>${badge(p.status)}</td>
+      <td style="display:flex;gap:4px;">
+        ${p.status==='Paid'?`<button class="btn btn-ghost" style="padding:4px 8px;font-size:11px;" onclick="showReceipt(${p.id})">Receipt</button>`:''}
+        ${p.status!=='Paid'?`<button class="btn btn-success" style="padding:4px 8px;font-size:11px;" onclick="quickPay(${p.id})">Pay Now</button>`:''}
+        ${p.status==='Overdue'?`<button class="btn btn-ghost" style="padding:4px 8px;font-size:11px;" onclick="sendReminder(${p.id})">Remind</button>`:''}
+      </td>
+    </tr>`).join('') || '<tr><td colspan="9" style="text-align:center;padding:20px;color:var(--text3)">No payment records.</td></tr>';
+
+  // Stats from live DB
+  api('/dues/summary').then(s => {
+    if (!s) return;
+    const sv = document.querySelectorAll('#panel-dues .stat-value');
+    if(sv[0]) sv[0].textContent = s.paid_count||0;
+    if(sv[1]) sv[1].textContent = s.overdue_count||0;
+    if(sv[2]) sv[2].textContent = s.unpaid_count||0;
+    if(sv[3]) sv[3].textContent = '₱'+(parseInt(s.total_collected||0)).toLocaleString();
+    const sc = document.querySelectorAll('#panel-dues .stat-change');
+    if(sc[0]) sc[0].textContent = '₱'+(parseInt(s.total_collected||0)).toLocaleString()+' collected';
+    if(sc[1]) sc[1].textContent = '₱'+(parseInt(s.total_overdue||0)).toLocaleString()+' overdue';
+  }).catch(()=>{});
+  updateBadges();
+}
+
+async function savePayment() {
+  const resId  = document.getElementById('pay-resident')?.value;
+  const month  = document.getElementById('pay-month')?.value;
+  const amount = document.getElementById('pay-amount')?.value;
+  const method = document.getElementById('pay-method')?.value;
+  const ref    = document.getElementById('pay-ref')?.value.trim();
+  const notes  = document.getElementById('pay-notes')?.value.trim();
+  const errEl  = document.getElementById('pay-error');
+  if (!resId||!month||!amount) { errEl.textContent='Resident, month and amount are required.'; errEl.style.display='block'; return; }
+  const btn = document.querySelector('#add-payment-modal .btn-primary');
+  btn.textContent='Saving…'; btn.disabled=true;
+  try {
+    await api('/dues/payment', 'POST', { resident_id:parseInt(resId), billing_month:month, amount:parseFloat(amount), payment_method:method, reference_number:ref||null, notes:notes||null });
+    closeModal('add-payment-modal');
+    errEl.style.display='none';
+    STATE.payments = await api('/dues');
+    renderDues(); refreshDashboardStats(); refreshMapMarkers();
+    const r = STATE.residents.find(x=>x.id===parseInt(resId));
+    toast(`💰 ₱${parseFloat(amount).toLocaleString()} payment confirmed for ${r?.last_name||'resident'}!`);
+  } catch(e) { errEl.textContent=e.message; errEl.style.display='block'; }
+  btn.textContent='✓ Confirm Payment'; btn.disabled=false;
+}
+
+async function quickPay(payId) {
+  const p = STATE.payments.find(x=>x.id===payId);
+  if (!p||!confirm(`Mark ₱${parseFloat(p.amount||0).toLocaleString()} as paid for ${p.last_name}?`)) return;
+  try {
+    await api('/dues/payment', 'POST', { resident_id:p.resident_id, billing_month:p.billing_month, amount:p.amount, payment_method:'Cash' });
+    STATE.payments = await api('/dues');
+    renderDues(); refreshDashboardStats(); refreshMapMarkers();
+    toast(`💰 Payment confirmed for ${p.last_name}, ${p.first_name}!`);
+  } catch(e) { toast('Payment failed: '+e.message,'error'); }
+}
+
+function showReceipt(payId) {
+  const p = STATE.payments.find(x=>x.id===payId);
+  if (!p) return;
+  toast(`🧾 Receipt: ${p.last_name}, ${p.first_name} — ₱${parseFloat(p.amount||0).toLocaleString()} — ${p.billing_month} — ${p.payment_method||'Cash'} ${p.reference_number?'('+p.reference_number+')':''}`, 'info');
+}
+
+function sendReminder(payId) {
+  const p = STATE.payments.find(x=>x.id===payId);
+  if (!p) return;
+  toast(`📱 Reminder sent to ${p.last_name}, ${p.first_name} for ${p.billing_month} dues.`, 'info');
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// INCIDENTS
+// ══════════════════════════════════════════════════════════════════════════════
+function renderIncidents() {
+  const tbody = document.querySelector('#panel-incidents .table-wrap table tbody');
+  if (tbody) {
+    tbody.innerHTML = STATE.incidents.map(inc => `
+      <tr>
+        <td>INC-${inc.id}</td>
+        <td>${inc.incident_type}</td>
+        <td>${inc.block}${inc.lot_number?' Lot '+inc.lot_number:''}</td>
+        <td>${badge(inc.priority)}</td>
+        <td>${badge(inc.status)}</td>
+      </tr>`).join('');
+  }
+  const leftCol = document.querySelector('#panel-incidents .grid-2 > div:first-child');
+  if (leftCol) {
+    const cls  = {Open:'alert-red','In Progress':'alert-yellow',Resolved:'alert-green',Closed:'alert-blue'};
+    const icon = {Open:'🚨','In Progress':'⚠️',Resolved:'✅',Closed:'📁'};
+    leftCol.innerHTML = STATE.incidents.map(inc => `
+      <div class="alert ${cls[inc.status]||'alert-blue'}" style="margin-bottom:10px;">
+        <span class="alert-icon">${icon[inc.status]||'🔔'}</span>
+        <div style="flex:1;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;">
+            <strong>INC-${inc.id} — ${inc.priority.toUpperCase()}</strong>${badge(inc.status)}
+          </div>
+          <div style="font-size:12px;">${inc.description.substring(0,80)}${inc.description.length>80?'...':''}</div>
+          <div style="font-size:10px;opacity:.7;margin-top:4px;">Reported by: ${inc.reporter_name||'Unknown'} · ${inc.created_fmt||inc.created_at||''}</div>
+          ${SESSION.role!=='Homeowner'&&inc.status!=='Resolved'&&inc.status!=='Closed'?`
+          <div style="margin-top:8px;display:flex;gap:6px;">
+            <button class="btn btn-ghost" style="padding:3px 8px;font-size:11px;" onclick="updateIncidentStatus(${inc.id},'In Progress')">In Progress</button>
+            <button class="btn btn-success" style="padding:3px 8px;font-size:11px;" onclick="updateIncidentStatus(${inc.id},'Resolved')">Resolve</button>
+          </div>`:''}
+        </div>
+      </div>`).join('');
+  }
+  const sub = document.querySelector('#panel-incidents div[style*="font-size:12px"]');
+  if (sub) sub.textContent = STATE.incidents.filter(i=>i.status==='Open').length + ' active open incidents';
+  updateBadges();
+}
+
+async function saveIncident() {
+  const type     = document.getElementById('inc-type')?.value;
+  const priority = document.getElementById('inc-priority')?.value;
+  const block    = document.getElementById('inc-block')?.value;
+  const lot      = document.getElementById('inc-lot')?.value.trim();
+  const desc     = document.getElementById('inc-desc')?.value.trim();
+  const errEl    = document.getElementById('inc-error');
+  if (!desc) { errEl.textContent='Please describe the incident.'; errEl.style.display='block'; return; }
+  const btn = document.querySelector('#incident-modal .btn-danger');
+  btn.textContent='Sending…'; btn.disabled=true;
+  try {
+    await api('/incidents', 'POST', { incident_type:type, description:desc, priority, block, lot_number:lot||null });
+    closeModal('incident-modal');
+    document.getElementById('inc-desc').value='';
+    document.getElementById('inc-lot').value='';
+    errEl.style.display='none';
+    STATE.incidents = await api('/incidents');
+    renderIncidents(); refreshDashboardStats(); updateBadges();
+    toast(`🚨 Incident reported: ${type} at ${block}${lot?' Lot '+lot:''}. Guards notified!`, 'error');
+  } catch(e) { errEl.textContent=e.message; errEl.style.display='block'; }
+  btn.textContent='🚨 Send Alert'; btn.disabled=false;
+}
+
+async function updateIncidentStatus(id, newStatus) {
+  try {
+    await api('/incidents/status', 'POST', { id, status:newStatus });
+    const inc = STATE.incidents.find(i=>i.id===id);
+    if (inc) inc.status = newStatus;
+    renderIncidents(); updateBadges();
+    toast(`INC-${id} → ${newStatus}`, newStatus==='Resolved'?'success':'info');
+  } catch(e) { toast('Update failed: '+e.message,'error'); }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ANNOUNCEMENTS
+// ══════════════════════════════════════════════════════════════════════════════
+function renderAnnouncements() {
+  const listEl = document.querySelector('#panel-announcements .grid-2 > div:first-child .card-body');
+  const tlEl   = document.querySelector('#panel-announcements .timeline');
+  const catColors = {General:'badge-green',Urgent:'badge-red',Event:'badge-blue',Maintenance:'badge-yellow','Payment Reminder':'badge-purple'};
+  const catBg    = {Urgent:'var(--red)',Event:'var(--accent)',General:'var(--green)',Maintenance:'var(--yellow)','Payment Reminder':'var(--purple)'};
+  if (listEl) {
+    listEl.innerHTML = STATE.announcements.map(a => `
+      <div style="border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:10px;transition:border-color .2s;" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;gap:8px;">
+          <strong style="font-size:13px;">${a.title}</strong>
+          <span class="badge ${catColors[a.category]||'badge-blue'}">${a.category}</span>
+        </div>
+        <div style="font-size:12px;color:var(--text2);margin-bottom:8px;line-height:1.5;">${a.content}</div>
+        <div style="font-size:11px;color:var(--text3);">Posted by ${a.posted_by_name||a.posted_by_username||'Admin'} · ${a.post_date} · ${a.target_audience}</div>
+        ${SESSION.role==='Administrator'?`<div style="margin-top:8px;"><button class="btn btn-ghost" style="padding:3px 8px;font-size:11px;" onclick="archiveAnnouncement(${a.id})">Archive</button></div>`:''}
+      </div>`).join('') || '<div style="color:var(--text3);font-size:12px;text-align:center;padding:20px;">No active announcements.</div>';
+  }
+  if (tlEl) {
+    tlEl.innerHTML = STATE.announcements.map(a => `
+      <div class="tl-item">
+        <div class="tl-dot" style="background:${catBg[a.category]||'var(--accent)'}"></div>
+        <div class="tl-time">${a.post_date}</div>
+        <div class="tl-text"><strong>${a.title}</strong><br><span style="font-size:10px;">${a.target_audience}</span></div>
+      </div>`).join('');
+  }
+}
+
+async function saveAnnouncement() {
+  const title    = document.getElementById('ann-title')?.value.trim();
+  const content  = document.getElementById('ann-content')?.value.trim();
+  const category = document.getElementById('ann-category')?.value;
+  const notify   = document.getElementById('ann-notify')?.value;
+  const postDate = document.getElementById('ann-postdate')?.value;
+  const expiry   = document.getElementById('ann-expiry')?.value;
+  const errEl    = document.getElementById('ann-error');
+  if (!title||!content) { errEl.textContent='Title and content are required.'; errEl.style.display='block'; return; }
+  const btn = document.querySelector('#announcement-modal .btn-primary');
+  btn.textContent='Posting…'; btn.disabled=true;
+  try {
+    await api('/announcements', 'POST', { title, content, category, target_audience:notify, post_date:postDate||new Date().toISOString().split('T')[0], expiry_date:expiry||null });
+    closeModal('announcement-modal');
+    ['ann-title','ann-content','ann-postdate','ann-expiry'].forEach(id=>{if(document.getElementById(id))document.getElementById(id).value='';});
+    errEl.style.display='none';
+    STATE.announcements = await api('/announcements');
+    renderAnnouncements();
+    toast(`📢 "${title}" posted and sent to ${notify}!`);
+  } catch(e) { errEl.textContent=e.message; errEl.style.display='block'; }
+  btn.textContent='📢 Post & Notify'; btn.disabled=false;
+}
+
+async function archiveAnnouncement(id) {
+  if (!confirm('Archive this announcement?')) return;
+  try {
+    await api('/announcements/archive', 'POST', { id });
+    STATE.announcements = STATE.announcements.filter(a=>a.id!==id);
+    renderAnnouncements();
+    toast('Announcement archived.', 'info');
+  } catch(e) { toast('Archive failed: '+e.message,'error'); }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// USERS
+// ══════════════════════════════════════════════════════════════════════════════
+function renderUsers() {
+  const tbody = document.querySelector('#panel-users table tbody');
+  if (!tbody) return;
+  tbody.innerHTML = STATE.users.map(u => `
+    <tr>
+      <td>USR-${String(u.id).padStart(3,'0')}</td>
+      <td class="td-name">${u.username}</td>
+      <td>${u.first_name} ${u.last_name}</td>
+      <td>${badge(u.role)}</td>
+      <td>${u.last_login||'Never'}</td>
+      <td>${badge(u.status)}</td>
+      <td style="display:flex;gap:4px;">
+        <button class="btn btn-ghost" style="padding:4px 8px;font-size:11px;" onclick="toggleUserStatus(${u.id},'${u.status==='Active'?'Inactive':'Active'}')">${u.status==='Active'?'Deactivate':'Activate'}</button>
+        ${u.id!==SESSION.userId?`<button class="btn btn-ghost" style="padding:4px 8px;font-size:11px;color:var(--red);" onclick="deleteUser(${u.id})">Remove</button>`:''}
+      </td>
+    </tr>`).join('');
+}
+
+async function saveUser() {
+  const fname    = document.getElementById('usr-fname')?.value.trim();
+  const lname    = document.getElementById('usr-lname')?.value.trim();
+  const username = document.getElementById('usr-username')?.value.trim();
+  const role     = document.getElementById('usr-role')?.value;
+  const pass     = document.getElementById('usr-pass')?.value;
+  const pass2    = document.getElementById('usr-pass2')?.value;
+  const status   = document.getElementById('usr-status')?.value;
+  const errEl    = document.getElementById('usr-error');
+  if (!fname||!lname||!username||!pass) { errEl.textContent='All fields are required.'; errEl.style.display='block'; return; }
+  if (pass!==pass2) { errEl.textContent='Passwords do not match.'; errEl.style.display='block'; return; }
+  const btn = document.querySelector('#add-user-modal .btn-primary');
+  btn.textContent='Creating…'; btn.disabled=true;
+  try {
+    await api('/users', 'POST', { first_name:fname, last_name:lname, username, role, password:pass, status });
+    closeModal('add-user-modal');
+    ['usr-fname','usr-lname','usr-username','usr-pass','usr-pass2'].forEach(id=>{if(document.getElementById(id))document.getElementById(id).value='';});
+    errEl.style.display='none';
+    STATE.users = await api('/users');
+    renderUsers();
+    toast(`🔑 Account "${username}" created as ${role}!`);
+  } catch(e) { errEl.textContent=e.message; errEl.style.display='block'; }
+  btn.textContent='✓ Create Account'; btn.disabled=false;
+}
+
+async function toggleUserStatus(id, newStatus) {
+  try {
+    await api('/users/status', 'POST', { id, status:newStatus });
+    const u = STATE.users.find(x=>x.id===id);
+    if (u) u.status=newStatus;
+    renderUsers();
+    toast(`User ${STATE.users.find(x=>x.id===id)?.username} ${newStatus==='Active'?'activated':'deactivated'}.`, 'info');
+  } catch(e) { toast(e.message,'error'); }
+}
+
+async function deleteUser(id) {
+  const u = STATE.users.find(x=>x.id===id);
+  if (!u||!confirm(`Delete user "${u.username}"?`)) return;
+  try {
+    await api(`/users?id=${id}`, 'DELETE');
+    STATE.users = STATE.users.filter(x=>x.id!==id);
+    renderUsers();
+    toast(`User ${u.username} removed.`, 'info');
+  } catch(e) { toast(e.message,'error'); }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// REPORTS (real CSV from STATE)
+// ══════════════════════════════════════════════════════════════════════════════
+function renderReports() {
+  const cards = document.querySelectorAll('#panel-reports .card');
+  const fns = [dlResidents, dlVisitors, dlDues, dlIncidents, dlActivity, dlBlockLot];
+  cards.forEach((c,i)=>{ if(fns[i]) c.onclick=fns[i]; });
+}
+
+function dlCSV(rows, name) {
+  const csv = rows.map(r=>r.map(c=>`"${String(c??'').replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download = name; a.click(); URL.revokeObjectURL(a.href);
+  toast(`📥 ${name} downloaded!`);
+}
+
+function dlResidents() {
+  const rows=[['ID','Last Name','First Name','Block','Lot','Since','Occupancy','Status','Contact']];
+  STATE.residents.forEach(r=>rows.push([r.id,r.last_name,r.first_name,r.block,r.lot_number,r.year_of_residency,r.occupancy_status,r.status,SESSION.role==='Administrator'?r.contact_number||'':'Admin only']));
+  dlCSV(rows,'villa_purita_residents_'+new Date().toISOString().split('T')[0]+'.csv');
+}
+function dlVisitors() {
+  const rows=[['ID','Name','Block','Lot','Purpose','ID Type','Time In','Time Out','Status','Guard']];
+  STATE.visitors.forEach(v=>rows.push([v.id,v.visitor_name,v.visiting_block,v.visiting_lot,v.purpose,v.id_type,v.time_in_fmt||v.time_in,v.time_out_fmt||v.time_out||'',v.status,v.guard_name||'']));
+  dlCSV(rows,'villa_purita_visitors_'+new Date().toISOString().split('T')[0]+'.csv');
+}
+function dlDues() {
+  const rows=[['Pay ID','Resident','Block','Lot','Month','Amount','Date Paid','Method','Ref','Status']];
+  STATE.payments.forEach(p=>rows.push([p.id,p.last_name+' '+p.first_name,p.block,p.lot_number,p.billing_month,p.amount,p.date_paid_fmt||p.date_paid||'',p.payment_method||'',p.reference_number||'',p.status]));
+  dlCSV(rows,'villa_purita_dues_'+new Date().toISOString().split('T')[0]+'.csv');
+}
+function dlIncidents() {
+  const rows=[['ID','Type','Block','Lot','Priority','Status','Reporter','Time','Description']];
+  STATE.incidents.forEach(i=>rows.push([i.id,i.incident_type,i.block,i.lot_number||'',i.priority,i.status,i.reporter_name||'',i.created_fmt||i.created_at,i.description]));
+  dlCSV(rows,'villa_purita_incidents_'+new Date().toISOString().split('T')[0]+'.csv');
+}
+function dlActivity()  { dlCSV([['User','Action','Time'],
+  [SESSION.name,'Session export',new Date().toLocaleString('en-PH')]],
+  'villa_purita_activity.csv'); }
+function dlBlockLot() {
+  const rows=[['Block','Last Name','First Name','Lot','Status','Occupancy']];
+  STATE.residents.forEach(r=>rows.push([r.block,r.last_name,r.first_name,r.lot_number,r.status,r.occupancy_status]));
+  dlCSV(rows,'villa_purita_blocklot.csv');
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// GUARD CONSOLE
+// ══════════════════════════════════════════════════════════════════════════════
+function guardSearch(q) {
+  const res = document.getElementById('guard-results');
+  if (!q||!res) { if(res) res.innerHTML=''; return; }
+  const m = STATE.residents.filter(r=>(r.first_name+' '+r.last_name+' '+r.block+' lot '+r.lot_number).toLowerCase().includes(q.toLowerCase()));
+  res.innerHTML = m.slice(0,5).map(r =>
+    `<div style="padding:9px;border:1px solid var(--border);border-radius:8px;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+      <div><div style="font-size:13px;font-weight:600;">${r.last_name}, ${r.first_name}</div>
+      <div style="font-size:11px;color:var(--text3);">${r.block} · Lot ${r.lot_number} · ${r.occupancy_status}</div></div>
+      <button class="btn btn-primary" style="padding:4px 10px;font-size:11px;" onclick="guardLocate(${r.id})">📍 Locate</button>
+    </div>`).join('') || '<div style="font-size:12px;color:var(--text3);">No residents found.</div>';
+}
+
+function guardLocate(rid) {
+  if (!guardMap) { initGuardMap(); setTimeout(()=>guardLocate(rid), 600); return; }
+  const e = guardMapMarkers.find(m=>m.r.id===rid);
+  if (!e) return;
+  guardMap.setView(e.coords, 19, {animate:true});
+  e.m.setIcon(L.divIcon({className:'',html:'<div style="width:20px;height:20px;background:#3b82f6;border:3px solid #fff;border-radius:4px;box-shadow:0 0 12px #3b82f6;animation:pulse 1.5s infinite;"></div>',iconSize:[20,20],iconAnchor:[10,10]}));
+  e.m.openPopup();
+  setTimeout(()=>e.m.setIcon(makeIcon(resColor(e.r))), 3000);
+  toast(`📍 Navigating to: ${e.r.last_name}, ${e.r.first_name}`, 'info');
+}
+
+async function guardLogEntry() {
+  const nameEl    = document.querySelector('#panel-guard .card:nth-child(2) input[placeholder="Full name"]');
+  const destEl    = document.querySelector('#panel-guard .card:nth-child(2) input[placeholder="Block & Lot or Resident name"]');
+  const purposeEl = document.querySelector('#panel-guard .card:nth-child(2) select');
+  const idEl      = document.querySelector('#panel-guard .card:nth-child(2) input[placeholder="ID type"]');
+  const name = nameEl?.value.trim(); const dest = destEl?.value.trim(); const idType = idEl?.value.trim();
+  if (!name||!dest||!idType) { toast('Fill in visitor name, destination, and ID type.','error'); return; }
+  const parts = dest.match(/Block ([A-D])\s+(?:Lot\s*)?(\w+)/i);
+  const block = parts ? 'Block '+parts[1] : dest;
+  const lot   = parts ? parts[2] : '?';
+  try {
+    await api('/visitors/entry', 'POST', { visitor_name:name, block, lot, purpose:purposeEl?.value||'Guest Visit', id_type:idType });
+    if(nameEl) nameEl.value=''; if(destEl) destEl.value=''; if(idEl) idEl.value='';
+    STATE.visitors = await api('/visitors');
+    renderGuardVisitors(); renderVisitors(); updateBadges();
+    toast(`✅ ${name} logged in at ${new Date().toLocaleTimeString('en-PH',{hour:'2-digit',minute:'2-digit'})}`);
+  } catch(e) { toast('Log failed: '+e.message,'error'); }
+}
+
+function renderGuardVisitors() {
+  const tbody = document.getElementById('guard-inside-tbody');
+  if (!tbody) return;
+  const inside = STATE.visitors.filter(v=>v.status==='Inside');
+  tbody.innerHTML = inside.map(v =>
+    `<tr>
+      <td class="td-name">${v.visitor_name}</td>
+      <td>${v.purpose}</td>
+      <td>${v.visiting_block} Lot ${v.visiting_lot}</td>
+      <td>${v.time_in_fmt||v.time_in||'—'}</td>
+      <td><button class="btn btn-danger" style="padding:4px 8px;font-size:11px;" onclick="logExit(${v.id})">Exit</button></td>
+    </tr>`).join('') || '<tr><td colspan="5" style="text-align:center;padding:16px;color:var(--text3);">No visitors inside.</td></tr>';
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// DASHBOARD STATS (from STATE)
+// ══════════════════════════════════════════════════════════════════════════════
+function refreshDashboardStats() {
+  const totalRes  = STATE.residents.length;
+  const insideVis = STATE.visitors.filter(v=>v.status==='Inside').length;
+  const todayVis  = STATE.visitors.length;
+  const openInc   = STATE.incidents.filter(i=>i.status==='Open').length;
+  const paid      = STATE.payments.filter(p=>p.status==='Paid');
+  const overdue   = STATE.payments.filter(p=>p.status==='Overdue').length;
+  const collected = paid.reduce((s,p)=>s+parseFloat(p.amount||0),0);
+  const sv = document.querySelectorAll('#panel-dashboard-admin .stat-value');
+  const sc = document.querySelectorAll('#panel-dashboard-admin .stat-change');
+  if(sv[0]) sv[0].textContent=totalRes;
+  if(sv[1]) sv[1].textContent=totalRes;
+  if(sv[2]) sv[2].textContent='₱'+collected.toLocaleString();
+  if(sv[3]) sv[3].textContent=overdue;
+  if(sv[4]) sv[4].textContent=todayVis;
+  if(sv[5]) sv[5].textContent=openInc;
+  if(sc[3]) sc[3].textContent=overdue+' need follow-up';
+  if(sc[4]) sc[4].textContent=insideVis+' currently inside';
+  if(sc[5]) sc[5].textContent=openInc>0?'⚠ Needs attention':'All clear ✓';
+  const gv = document.querySelectorAll('#panel-dashboard-guard .stat-value');
+  if(gv[0]) gv[0].textContent=todayVis;
+  if(gv[1]) gv[1].textContent=openInc;
+  updateBadges();
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// GLOBAL SEARCH
+// ══════════════════════════════════════════════════════════════════════════════
+function globalSearch(q) {
+  const res = document.getElementById('global-search-results');
+  if (!q) { res.innerHTML='<div style="font-size:12px;color:var(--text3);">Start typing to search…</div>'; return; }
+  const ql=q.toLowerCase();
+  const rm=STATE.residents.filter(r=>(r.first_name+' '+r.last_name+' '+r.block+' lot '+r.lot_number).toLowerCase().includes(ql));
+  const vm=STATE.visitors.filter(v=>v.visitor_name.toLowerCase().includes(ql));
+  const im=STATE.incidents.filter(i=>(i.incident_type+' '+i.block).toLowerCase().includes(ql));
+  let html='';
+  if(rm.length){ html+=`<div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Residents (${rm.length})</div>`;
+    html+=rm.slice(0,4).map(r=>`<div style="padding:10px;border:1px solid var(--border);border-radius:8px;margin-bottom:6px;display:flex;align-items:center;gap:12px;cursor:pointer;" onclick="closeModal('search-modal');showPanel('residents',document.querySelector('[onclick*=residents]'));setTimeout(()=>viewResident(${r.id}),300)">
+      <span style="font-size:20px;">🏠</span><div><div style="font-size:13px;font-weight:600;">${r.last_name}, ${r.first_name}</div><div style="font-size:11px;color:var(--text3);">${r.block}·Lot ${r.lot_number}·${r.status}</div></div></div>`).join('');}
+  if(vm.length){ html+=`<div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin:10px 0 6px;">Visitors (${vm.length})</div>`;
+    html+=vm.slice(0,3).map(v=>`<div style="padding:10px;border:1px solid var(--border);border-radius:8px;margin-bottom:6px;display:flex;align-items:center;gap:12px;cursor:pointer;" onclick="closeModal('search-modal');showPanel('visitors',document.querySelector('[onclick*=visitors]'))">
+      <span style="font-size:20px;">🚗</span><div><div style="font-size:13px;font-weight:600;">${v.visitor_name}</div><div style="font-size:11px;color:var(--text3);">${v.visiting_block} Lot ${v.visiting_lot}·${v.purpose}·${v.status}</div></div></div>`).join('');}
+  if(im.length){ html+=`<div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin:10px 0 6px;">Incidents (${im.length})</div>`;
+    html+=im.slice(0,3).map(i=>`<div style="padding:10px;border:1px solid var(--border);border-radius:8px;margin-bottom:6px;display:flex;align-items:center;gap:12px;cursor:pointer;" onclick="closeModal('search-modal');showPanel('incidents',document.querySelector('[onclick*=incidents]'))">
+      <span style="font-size:20px;">🚨</span><div><div style="font-size:13px;font-weight:600;">INC-${i.id}: ${i.incident_type}</div><div style="font-size:11px;color:var(--text3);">${i.block}·${i.priority}·${i.status}</div></div></div>`).join('');}
+  res.innerHTML = html || `<div style="font-size:12px;color:var(--text3);padding:10px 0;">No results for "${q}"</div>`;
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// CLOCK + INIT
+// ══════════════════════════════════════════════════════════════════════════════
+function updateClock() {
+  let c = document.getElementById('tclock');
+  if (!c) {
+    c = document.createElement('span'); c.id='tclock';
+    c.style.cssText='font-size:11px;color:var(--text3);font-family:monospace;padding:4px 8px;background:var(--bg3);border-radius:6px;white-space:nowrap;';
+    const tbar = document.querySelector('.topbar-actions')||document.getElementById('topbar');
+    if (tbar) tbar.insertBefore(c, tbar.firstChild);
+  }
+  const now = new Date();
+  c.textContent = now.toLocaleDateString('en-PH',{weekday:'short',month:'short',day:'numeric'})
+    + ' ' + now.toLocaleTimeString('en-PH',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  // Extra CSS
+  const s = document.createElement('style');
+  s.textContent = `
+    @keyframes toastIn{from{transform:translateX(110%);opacity:0;}to{transform:translateX(0);opacity:1;}}
+    @keyframes toastOut{from{transform:translateX(0);}to{transform:translateX(110%);opacity:0;}}
+    @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(59,130,246,.4);}50%{box-shadow:0 0 0 10px rgba(59,130,246,0);}}
+    .leaflet-popup-content-wrapper,.leaflet-popup-tip{background:#141c2e!important;border:1px solid #1e2d47!important;color:#e2e8f0!important;box-shadow:0 8px 24px rgba(0,0,0,.5)!important;}
+    .leaflet-popup-close-button{color:#94a3b8!important;}
+    .leaflet-control-zoom a{background:#141c2e!important;color:#94a3b8!important;border-color:#1e2d47!important;}
+    .leaflet-control-zoom a:hover{background:#1a2235!important;color:#3b82f6!important;}
+  `;
+  document.head.appendChild(s);
+
+  // Set today's date in date fields
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('ann-postdate') && (document.getElementById('ann-postdate').value = today);
+
+  // Modal overlay click-to-close
+  document.querySelectorAll('.modal-overlay').forEach(o =>
+    o.addEventListener('click', e => { if(e.target===o) o.classList.remove('open'); }));
+
+  // Enter key login
+  document.getElementById('login-pass')?.addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+  document.getElementById('login-user')?.addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+
+  // Search box open
+  document.querySelector('.search-box')?.addEventListener('click', () => {
+    if (SESSION.loggedIn) openModal('search-modal');
+  });
+
+  // Guard visitor inside table
+  const guardPanel = document.getElementById('panel-guard');
+  if (guardPanel) {
+    const firstCol = guardPanel.querySelector('.grid-1-2 > div:first-child');
+    if (firstCol && !document.getElementById('guard-inside-tbody')) {
+      const tCard = document.createElement('div');
+      tCard.className='card';
+      tCard.innerHTML=`<div class="card-header"><div class="card-title">🚶 Visitors Currently Inside</div></div>
+        <div class="table-wrap"><table><thead><tr><th>Visitor</th><th>Purpose</th><th>Visiting</th><th>Time In</th><th>Exit</th></tr></thead>
+        <tbody id="guard-inside-tbody"><tr><td colspan="5" style="text-align:center;color:var(--text3);padding:14px;">Loading…</td></tr></tbody></table></div>`;
+      firstCol.appendChild(tCard);
+    }
+    // Wire guard quick log button
+    const logBtn = guardPanel.querySelector('.card:nth-child(2) .btn-success');
+    if (logBtn) logBtn.onclick = guardLogEntry;
+  }
+
+  // Check if already logged in (session resumption)
+  api('/auth/me').then(user => {
+    if (user?.role) {
+      selectedRole = user.role;
+      SESSION = { role:user.role, username:user.username, name:user.first_name+' '+user.last_name, userId:user.id, loggedIn:true };
+      completeLogin({ ...user, full_name: user.first_name+' '+user.last_name });
+    }
+  }).catch(() => {}); // Not logged in — show login screen normally
+
+  // Search init text
+  const sr = document.getElementById('global-search-results');
+  if (sr) sr.innerHTML = '<div style="font-size:12px;color:var(--text3);">Start typing to search residents, visitors, incidents…</div>';
+
+  setInterval(updateClock, 1000); updateClock();
+});
+</script>
+</body>
+</html>

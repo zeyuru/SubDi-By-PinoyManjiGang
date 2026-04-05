@@ -26,9 +26,11 @@ class Resident {
 
         $sql = "SELECT r.id, r.first_name, r.last_name, r.block, r.lot_number,
                        r.year_of_residency, r.occupancy_status, r.contact_number,
-                       r.contact_visibility, r.status,
+                       r.contact_visibility, r.status, r.user_id,
+                       COALESCE(u.username, '') AS username,
                        COALESCE(d.status, 'Unpaid') AS dues_status
                 FROM residents r
+                LEFT JOIN users u ON u.id = r.user_id
                 LEFT JOIN dues d
                        ON d.resident_id = r.id
                       AND d.billing_month = DATE_FORMAT(NOW(),'%Y-%m')
@@ -42,8 +44,9 @@ class Resident {
 
     public function findById(int $id): ?array {
         $stmt = $this->db->prepare(
-            "SELECT r.*, COALESCE(d.status,'Unpaid') AS dues_status
+            "SELECT r.*, COALESCE(u.username, '') AS username, COALESCE(d.status,'Unpaid') AS dues_status
              FROM residents r
+             LEFT JOIN users u ON u.id = r.user_id
              LEFT JOIN dues d ON d.resident_id = r.id
                AND d.billing_month = DATE_FORMAT(NOW(),'%Y-%m')
              WHERE r.id = ? AND r.deleted_at IS NULL"
@@ -67,10 +70,10 @@ class Resident {
         $stmt = $this->db->prepare(
             "INSERT INTO residents
              (first_name, last_name, block, lot_number, year_of_residency,
-              occupancy_status, contact_number, contact_visibility, status, created_at)
+              occupancy_status, contact_number, contact_visibility, status, user_id, created_at)
              VALUES
              (:first_name, :last_name, :block, :lot_number, :year_of_residency,
-              :occupancy_status, :contact_number, :contact_visibility, 'Active', NOW())"
+              :occupancy_status, :contact_number, :contact_visibility, 'Active', :user_id, NOW())"
         );
         $stmt->execute([
             ':first_name'         => $data['first_name'],
@@ -81,6 +84,7 @@ class Resident {
             ':occupancy_status'   => $data['occupancy_status'] ?? 'Owner',
             ':contact_number'     => $data['contact_number'] ?? null,
             ':contact_visibility' => $data['contact_visibility'] ?? 'admin_only',
+            ':user_id'            => $data['user_id'] ?? null,
         ]);
         return (int)$this->db->lastInsertId();
     }
@@ -96,6 +100,16 @@ class Resident {
              WHERE block = ? AND lot_number = ? AND id != ? AND deleted_at IS NULL"
         );
         $stmt->execute([$block, $lot, $excludeId]);
+        return (bool)$stmt->fetchColumn();
+    }
+
+    public function userIdExists(int $userId): bool {
+        if (!$userId) return false;
+        $stmt = $this->db->prepare(
+            "SELECT COUNT(*) FROM residents
+             WHERE user_id = ? AND deleted_at IS NULL"
+        );
+        $stmt->execute([$userId]);
         return (bool)$stmt->fetchColumn();
     }
 

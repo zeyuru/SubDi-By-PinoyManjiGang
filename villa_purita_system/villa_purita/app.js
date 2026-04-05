@@ -7,7 +7,7 @@ const API = 'api'; // No leading slash!        // Change to your server path if 
 const CENTER = [10.258089561887017, 123.8020430653793];
 
 // ─── Session ─────────────────────────────────────────────────────────────────
-let SESSION = { role:'', username:'', name:'', userId:0, loggedIn:false };
+let SESSION = { role:'', username:'', name:'', email:'', status:'', userId:0, loggedIn:false };
 
 // ─── Map instances ────────────────────────────────────────────────────────────
 let dashMap=null, fullMap=null, guardMap=null;
@@ -101,6 +101,7 @@ async function completeLogin(user) {
   applyRoleAccess(user.role);
   // Load initial data
   await loadAllData();
+  await loadUserProfile();
   populatePaymentResidents();
   // Show role dashboard
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
@@ -148,6 +149,8 @@ function applyRoleAccess(role) {
     // Hide homeowner-only actions from guard
     document.querySelectorAll('.ho-action').forEach(el => el.style.display='none');
     document.getElementById('new-record-btn').style.display = 'none';
+    // Guards cannot post announcements — hide the button
+    if (annBtn) annBtn.style.display = 'none';
   } else {
     // Admin — hide homeowner-only actions
     document.querySelectorAll('.ho-action').forEach(el => el.style.display='none');
@@ -225,6 +228,7 @@ function showPanel(id, el) {
   if (id==='announcements') renderAnnouncements();
   if (id==='users')         renderUsers();
   if (id==='reports')       renderReports();
+  if (id==='blocklot')      renderBlockLot();
   if (id==='guard')         renderGuardVisitors();
   if (id==='dashboard')     { refreshDashboardStats(); setTimeout(initMaps, 350); }
 }
@@ -436,6 +440,60 @@ function updateBadges() {
   if (dot) dot.style.display = openInc>0 ? 'block' : 'none';
 }
 
+async function loadUserProfile() {
+  try {
+    const profile = await api('/auth/me');
+    SESSION.email = profile.email || '';
+    SESSION.username = profile.username || SESSION.username;
+    SESSION.status = profile.status || SESSION.status;
+    SESSION.name = profile.first_name && profile.last_name ? `${profile.first_name} ${profile.last_name}` : (profile.full_name || SESSION.name);
+    SESSION.userId = profile.id || SESSION.userId;
+    return profile;
+  } catch(e) {
+    console.warn('Unable to load user profile:', e.message);
+    return null;
+  }
+}
+
+function openHomeownerAccountModal() {
+  const fullnameEl = document.getElementById('acct-fullname');
+  const usernameEl = document.getElementById('acct-username');
+  const roleEl     = document.getElementById('acct-role');
+  const statusEl   = document.getElementById('acct-status');
+  const emailEl    = document.getElementById('acct-email');
+  const propEl     = document.getElementById('acct-property');
+  const errEl      = document.getElementById('acct-error');
+  if (fullnameEl) fullnameEl.textContent = SESSION.name || '—';
+  if (usernameEl) usernameEl.textContent = SESSION.username || '—';
+  if (roleEl) roleEl.textContent = SESSION.role || '—';
+  if (statusEl) statusEl.textContent = SESSION.status || 'Active';
+  if (emailEl) emailEl.value = SESSION.email || '';
+  const myResident = STATE.residents.find(r => r.user_id === SESSION.userId) || STATE.residents.find(r => (r.username && r.username===SESSION.username));
+  if (propEl) propEl.textContent = myResident ? `${myResident.block.replace('Block ','B-')} / L-${String(myResident.lot_number).padStart(2,'0')}` : 'N/A';
+  if (errEl) errEl.style.display = 'none';
+  ['acct-pass','acct-pass2'].forEach(id=>{if(document.getElementById(id))document.getElementById(id).value='';});
+  openModal('account-settings-modal');
+}
+
+async function saveAccountSettings() {
+  const email = document.getElementById('acct-email')?.value.trim();
+  const pass  = document.getElementById('acct-pass')?.value;
+  const pass2 = document.getElementById('acct-pass2')?.value;
+  const errEl = document.getElementById('acct-error');
+  if (pass && pass !== pass2) { errEl.textContent = 'Passwords do not match.'; errEl.style.display = 'block'; return; }
+  const btn = document.querySelector('#account-settings-modal .btn-primary');
+  btn.textContent = 'Saving…'; btn.disabled = true;
+  try {
+    await api('/users/account', 'POST', { email: email || null, password: pass || null });
+    SESSION.email = email || '';
+    closeModal('account-settings-modal');
+    toast('✅ Account settings updated.');
+  } catch(e) {
+    errEl.textContent = e.message; errEl.style.display = 'block';
+  }
+  btn.textContent = 'Save Changes'; btn.disabled = false;
+}
+
 // ══════════════════════════════════════════════════════════════════════════════
 // RESIDENTS
 // ══════════════════════════════════════════════════════════════════════════════
@@ -443,6 +501,14 @@ function renderResidents() {
   const tbody = document.getElementById('residents-tbody');
   if (!tbody) return;
   const list = STATE.residents;
+  const total = STATE.residents.length;
+  const visible = list.length;
+  const summary = document.getElementById('resident-panel-summary');
+  const pagination = document.getElementById('resident-panel-pagination');
+
+  if (summary) summary.textContent = `${total} occupied units registered`;
+  if (pagination) pagination.textContent = `Showing ${visible} of ${total} residents`;
+
   tbody.innerHTML = list.map((r,i) => `
     <tr>
       <td>${String(i+1).padStart(3,'0')}</td>
@@ -488,15 +554,25 @@ async function saveResident() {
   const lot     = document.getElementById('res-lot')?.value.trim();
   const year    = document.getElementById('res-year')?.value || new Date().getFullYear();
   const occ     = document.getElementById('res-occ')?.value;
+  const userId  = document.getElementById('res-user')?.value;
   const contact = document.getElementById('res-contact')?.value.trim();
   const errEl   = document.getElementById('res-error');
   if (!fname||!lname||!lot) { errEl.textContent='First name, last name and lot are required.'; errEl.style.display='block'; return; }
   const btn = document.querySelector('#add-resident-modal .btn-primary');
   btn.textContent='Saving…'; btn.disabled=true;
   try {
-    await api('/residents', 'POST', { first_name:fname, last_name:lname, block, lot_number:lot, year_of_residency:parseInt(year), occupancy_status:occ, contact_number:contact||null });
+    await api('/residents', 'POST', {
+      first_name: fname,
+      last_name: lname,
+      block,
+      lot_number: lot,
+      year_of_residency: parseInt(year),
+      occupancy_status: occ,
+      contact_number: contact||null,
+      user_id: userId ? parseInt(userId) : null
+    });
     closeModal('add-resident-modal');
-    ['res-fname','res-lname','res-lot','res-year','res-contact'].forEach(id=>{if(document.getElementById(id))document.getElementById(id).value='';});
+    ['res-fname','res-lname','res-lot','res-year','res-contact','res-user'].forEach(id=>{if(document.getElementById(id))document.getElementById(id).value='';});
     errEl.style.display='none';
     STATE.residents = await api('/residents');
     populatePaymentResidents();
@@ -548,25 +624,35 @@ function renderVisitors() {
 }
 
 async function saveVisitor() {
-  const name    = document.getElementById('vis-name')?.value.trim();
-  const block   = document.getElementById('vis-block')?.value;
-  const lot     = document.getElementById('vis-lot')?.value.trim();
-  const purpose = document.getElementById('vis-purpose')?.value;
-  const idType  = document.getElementById('vis-id-type')?.value.trim();
-  const idNum   = document.getElementById('vis-id-num')?.value.trim();
-  const plate   = document.getElementById('vis-plate')?.value.trim();
-  const errEl   = document.getElementById('vis-error');
+  const name      = document.getElementById('vis-name')?.value.trim();
+  const block     = document.getElementById('vis-block')?.value;
+  const lot       = document.getElementById('vis-lot')?.value.trim();
+  const purpose   = document.getElementById('vis-purpose')?.value;
+  const idType    = document.getElementById('vis-id-type')?.value.trim();
+  const idNum     = document.getElementById('vis-id-num')?.value.trim();
+  const plate     = document.getElementById('vis-plate')?.value.trim();
+  const hoId      = document.getElementById('vis-homeowner')?.value;
+  const errEl     = document.getElementById('vis-error');
   if (!name||!lot||!idType) { errEl.textContent='Name, lot, and ID type are required.'; errEl.style.display='block'; return; }
   const btn = document.querySelector('#add-visitor-modal .btn-success');
   btn.textContent='Logging…'; btn.disabled=true;
   try {
-    await api('/visitors/entry', 'POST', { visitor_name:name, block, lot, purpose, id_type:idType, id_number:idNum||null, vehicle_plate:plate||null });
+    await api('/visitors/entry', 'POST', {
+      visitor_name:name, block, lot, purpose, id_type:idType,
+      id_number:idNum||null, vehicle_plate:plate||null,
+      visiting_homeowner_id: hoId ? parseInt(hoId) : null
+    });
     closeModal('add-visitor-modal');
     ['vis-name','vis-lot','vis-id-type','vis-id-num','vis-plate'].forEach(id=>{if(document.getElementById(id))document.getElementById(id).value='';});
+    if (document.getElementById('vis-homeowner')) document.getElementById('vis-homeowner').value='';
+    if (document.getElementById('vis-homeowner-notif')) document.getElementById('vis-homeowner-notif').style.display='none';
     errEl.style.display='none';
     STATE.visitors = await api('/visitors');
     renderVisitors(); refreshDashboardStats(); updateBadges();
-    toast(`🚗 ${name} logged in — ${block} Lot ${lot}`);
+    // Show notification hint if homeowner was selected
+    const hoRes = hoId ? STATE.residents.find(r=>r.id===parseInt(hoId)) : null;
+    const hoName = hoRes ? hoRes.last_name + ', ' + hoRes.first_name : '';
+    toast(`🚗 ${name} logged in — ${block} Lot ${lot}${hoName?' · Notified: '+hoName:''}`);
   } catch(e) { errEl.textContent=e.message; errEl.style.display='block'; }
   btn.textContent='✓ Log Entry'; btn.disabled=false;
 }
@@ -585,49 +671,247 @@ async function logExit(id) {
 // DUES & PAYMENTS
 // ══════════════════════════════════════════════════════════════════════════════
 function populatePaymentResidents() {
-  const sel = document.getElementById('pay-resident');
-  if (!sel) return;
-  sel.innerHTML = STATE.residents.map(r =>
+  const opts = STATE.residents.map(r =>
     `<option value="${r.id}">${r.last_name}, ${r.first_name} — ${r.block} Lot ${r.lot_number}</option>`
   ).join('');
+  const sel = document.getElementById('pay-resident');
+  if (sel) sel.innerHTML = opts;
+  const iss = document.getElementById('issue-resident');
+  if (iss) iss.innerHTML = opts;
+  const userSelect = document.getElementById('res-user');
+  if (userSelect) {
+    const owners = STATE.users.filter(u => u.role === 'Homeowner' && !STATE.residents.some(r => r.user_id === u.id));
+    userSelect.innerHTML = '<option value="">— None —</option>' + owners.map(u =>
+      `<option value="${u.id}">${u.username} — ${u.first_name} ${u.last_name}${u.email?` (${u.email})`:''}</option>`
+    ).join('');
+  }
+  // Visitor modal: homeowner dropdown
+  const visHo = document.getElementById('vis-homeowner');
+  if (visHo) {
+    visHo.innerHTML = '<option value="">— Select homeowner (optional) —</option>' +
+      STATE.residents.map(r =>
+        `<option value="${r.id}">${r.last_name}, ${r.first_name} — ${r.block} Lot ${r.lot_number}</option>`
+      ).join('');
+    visHo.onchange = () => {
+      const notif = document.getElementById('vis-homeowner-notif');
+      if (notif) notif.style.display = visHo.value ? '' : 'none';
+    };
+  }
 }
 
 function renderDues() {
-  const tbody = document.querySelector('#panel-dues table tbody');
+  const role = SESSION.role;
+  const isAdmin = role === 'Administrator';
+  const isGuard = role === 'Guard';
+  const isHO    = role === 'Homeowner';
+
+  // Show/hide buttons based on role
+  const issueBtn   = document.getElementById('issue-bill-btn');
+  const recordBtn  = document.getElementById('record-payment-btn');
+  const statsRow   = document.getElementById('dues-stats-row');
+  const allCard    = document.getElementById('dues-all-card');
+  const hoCard     = document.getElementById('ho-pending-bills');
+
+  if (issueBtn)  issueBtn.style.display  = isAdmin ? '' : 'none';
+  if (recordBtn) recordBtn.style.display = isAdmin ? '' : 'none';
+  if (statsRow)  statsRow.style.display  = isHO    ? 'none' : '';
+  if (allCard)   allCard.style.display   = isHO    ? 'none' : '';
+  if (hoCard)    hoCard.style.display    = isHO    ? '' : 'none';
+
+  if (isHO) {
+    // Homeowner: show bills issued to them
+    const myResident = STATE.residents.find(r =>
+      (r.user_id && r.user_id === SESSION.userId) ||
+      (r.username && r.username === SESSION.username) ||
+      (r.first_name + ' ' + r.last_name).toLowerCase() === SESSION.name.toLowerCase()
+    ) || STATE.residents[0];
+
+    const myBills = myResident
+      ? STATE.payments.filter(p =>
+          p.resident_id === myResident.id ||
+          (p.last_name === myResident.last_name && p.first_name === myResident.first_name))
+      : [];
+
+    const tbody = document.getElementById('ho-bills-tbody');
+    const countEl = document.getElementById('ho-pending-count');
+    const pending = myBills.filter(p => p.status !== 'Paid').length;
+    if (countEl) countEl.textContent = pending > 0
+      ? `${pending} pending bill${pending>1?'s':''}`
+      : 'All paid ✓';
+    if (tbody) {
+      tbody.innerHTML = myBills.length
+        ? myBills.map(p => `
+          <tr>
+            <td>${p.billing_month}</td>
+            <td style="font-size:11px;color:var(--text2);max-width:180px;">${p.notes||'Monthly association dues'}</td>
+            <td><strong>₱${parseFloat(p.amount||0).toLocaleString()}</strong></td>
+            <td style="font-size:11px;color:var(--text3);">${p.issued_by_name||'Admin'}</td>
+            <td>${badge(p.status)}</td>
+            <td>
+              ${p.status!=='Paid'
+                ? `<span style="font-size:11px;color:var(--yellow);">📌 Come to office to pay</span>`
+                : `<span style="font-size:11px;color:var(--green);">✅ Paid ${p.date_paid_fmt||''}</span>`}
+            </td>
+          </tr>`).join('')
+        : '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--text3);">No bills issued to you yet.</td></tr>';
+    }
+    return;
+  }
+
+  // Admin / Guard: full payment records table
+  const filterVal = document.getElementById('dues-filter')?.value || '';
+  const tbody = document.getElementById('dues-tbody');
   if (!tbody) return;
-  tbody.innerHTML = STATE.payments.map(p => `
-    <tr>
-      <td>PAY-${String(p.id).padStart(3,'0')}</td>
+
+  const rows = filterVal
+    ? STATE.payments.filter(p => p.status === filterVal)
+    : STATE.payments;
+
+  tbody.innerHTML = rows.map(p => {
+    const isPending = p.status !== 'Paid';
+    return `<tr>
+      <td style="font-size:11px;color:var(--text3);">PAY-${String(p.id).padStart(3,'0')}</td>
       <td class="td-name">${p.last_name}, ${p.first_name}</td>
       <td>${p.block} / ${p.lot_number}</td>
       <td>${p.billing_month}</td>
       <td>₱${parseFloat(p.amount||0).toLocaleString()}</td>
+      <td style="font-size:11px;color:var(--text3);">${p.issued_by_name||'<span style="color:var(--text3)">—</span>'}</td>
       <td>${p.date_paid_fmt||p.date_paid||'<span style="color:var(--text3)">—</span>'}</td>
       <td>${p.payment_method||'<span style="color:var(--text3)">—</span>'}</td>
       <td>${badge(p.status)}</td>
       <td style="display:flex;gap:4px;">
-        ${p.status==='Paid'?`<button class="btn btn-ghost" style="padding:4px 8px;font-size:11px;" onclick="showReceipt(${p.id})">Receipt</button>`:''}
-        ${p.status!=='Paid'?`<button class="btn btn-success" style="padding:4px 8px;font-size:11px;" onclick="quickPay(${p.id})">Pay Now</button>`:''}
-        ${p.status==='Overdue'?`<button class="btn btn-ghost" style="padding:4px 8px;font-size:11px;" onclick="sendReminder(${p.id})">Remind</button>`:''}
+        ${p.status==='Paid'
+          ? `<button class="btn btn-ghost" style="padding:3px 8px;font-size:11px;" onclick="showReceipt(${p.id})">Receipt</button>`
+          : isAdmin
+            ? `<button class="btn btn-success" style="padding:3px 8px;font-size:11px;" onclick="openConfirmPayment(${p.id})">✅ Confirm</button>`
+            : `<button class="btn btn-ghost" style="padding:3px 8px;font-size:11px;" onclick="sendReminder(${p.id})">Remind</button>`}
       </td>
-    </tr>`).join('') || '<tr><td colspan="9" style="text-align:center;padding:20px;color:var(--text3)">No payment records.</td></tr>';
+    </tr>`;
+  }).join('') || '<tr><td colspan="10" style="text-align:center;padding:20px;color:var(--text3)">No payment records.</td></tr>';
 
-  // Stats from live DB
+  // Live stats
   api('/dues/summary').then(s => {
     if (!s) return;
-    const sv = document.querySelectorAll('#panel-dues .stat-value');
+    const sv = document.querySelectorAll('#dues-stats-row .stat-value');
     if(sv[0]) sv[0].textContent = s.paid_count||0;
     if(sv[1]) sv[1].textContent = s.overdue_count||0;
     if(sv[2]) sv[2].textContent = s.unpaid_count||0;
-    if(sv[3]) sv[3].textContent = '₱'+(parseInt(s.total_collected||0)).toLocaleString();
-    const sc = document.querySelectorAll('#panel-dues .stat-change');
+    const sc = document.querySelectorAll('#dues-stats-row .stat-change');
     if(sc[0]) sc[0].textContent = '₱'+(parseInt(s.total_collected||0)).toLocaleString()+' collected';
-    if(sc[1]) sc[1].textContent = '₱'+(parseInt(s.total_overdue||0)).toLocaleString()+' overdue';
+    if(sc[1]) sc[1].textContent = '₱'+(parseInt(s.total_overdue||0)).toLocaleString()+' pending';
   }).catch(()=>{});
   updateBadges();
 }
 
-async function savePayment() {
+// ── Issue Bill (Admin only) ────────────────────────────────────────────────
+function openIssueBillModal() {
+  populatePaymentResidents();
+  // Pre-fill current month
+  const monthEl = document.getElementById('issue-month');
+  if (monthEl && !monthEl.value) monthEl.value = new Date().toISOString().slice(0,7);
+  const descEl = document.getElementById('issue-desc');
+  if (descEl && !descEl.value) {
+    const m = document.getElementById('issue-month')?.value || new Date().toISOString().slice(0,7);
+    descEl.value = `Monthly association dues for ${m}`;
+  }
+  document.getElementById('issue-error').style.display = 'none';
+  openModal('issue-bill-modal');
+}
+
+async function saveIssueBill() {
+  const resId  = document.getElementById('issue-resident')?.value;
+  const month  = document.getElementById('issue-month')?.value;
+  const amount = document.getElementById('issue-amount')?.value;
+  const desc   = document.getElementById('issue-desc')?.value.trim();
+  const notes  = document.getElementById('issue-notes')?.value.trim();
+  const errEl  = document.getElementById('issue-error');
+  errEl.style.display = 'none';
+  if (!resId || !month || !amount) {
+    errEl.textContent = 'Resident, billing month, and amount are required.';
+    errEl.style.display = 'block'; return;
+  }
+  const btn = document.querySelector('#issue-bill-modal .btn-primary');
+  btn.textContent = 'Issuing…'; btn.disabled = true;
+  try {
+    await api('/dues/issue', 'POST', {
+      resident_id: parseInt(resId),
+      billing_month: month,
+      amount: parseFloat(amount),
+      description: desc || `Monthly association dues for ${month}`,
+      notes: notes || null
+    });
+    closeModal('issue-bill-modal');
+    // Reset fields
+    document.getElementById('issue-desc').value = '';
+    document.getElementById('issue-notes').value = '';
+    STATE.payments = await api('/dues');
+    renderDues(); refreshDashboardStats();
+    const r = STATE.residents.find(x => x.id === parseInt(resId));
+    toast(`📋 Bill issued to ${r?.last_name||'resident'} for ${month}. They will see it on their dashboard.`);
+  } catch(e) { errEl.textContent = e.message; errEl.style.display = 'block'; }
+  btn.textContent = '📋 Issue Bill'; btn.disabled = false;
+}
+
+// ── Confirm Payment at Office (Admin only) ────────────────────────────────
+function openConfirmPayment(payId) {
+  const p = STATE.payments.find(x => x.id === payId);
+  if (!p) return;
+  document.getElementById('confirm-due-id').value       = p.id;
+  document.getElementById('confirm-resident-id').value  = p.resident_id;
+  document.getElementById('confirm-billing-month').value = p.billing_month;
+  document.getElementById('confirm-amount-val').value   = p.amount;
+  document.getElementById('confirm-amount').value       = p.amount;
+  document.getElementById('confirm-ref').value          = '';
+  document.getElementById('confirm-notes').value        = '';
+  document.getElementById('confirm-error').style.display = 'none';
+  document.getElementById('confirm-bill-info').innerHTML = `
+    <div style="font-weight:600;font-size:14px;margin-bottom:6px;">
+      ${p.last_name}, ${p.first_name}
+    </div>
+    <div style="display:flex;gap:20px;font-size:12px;color:var(--text2);">
+      <span>🏠 ${p.block} Lot ${p.lot_number}</span>
+      <span>📅 ${p.billing_month}</span>
+      <span>💰 ₱${parseFloat(p.amount||0).toLocaleString()}</span>
+    </div>
+    <div style="margin-top:8px;font-size:11px;color:var(--text3);">${p.notes||'Monthly association dues'}</div>`;
+  openModal('confirm-payment-modal');
+}
+
+async function confirmPayment() {
+  const resId   = document.getElementById('confirm-resident-id')?.value;
+  const month   = document.getElementById('confirm-billing-month')?.value;
+  const amount  = document.getElementById('confirm-amount')?.value;
+  const method  = document.getElementById('confirm-method')?.value;
+  const ref     = document.getElementById('confirm-ref')?.value.trim();
+  const notes   = document.getElementById('confirm-notes')?.value.trim();
+  const errEl   = document.getElementById('confirm-error');
+  errEl.style.display = 'none';
+  if (!amount || parseFloat(amount) <= 0) {
+    errEl.textContent = 'Please enter the amount received.';
+    errEl.style.display = 'block'; return;
+  }
+  const btn = document.querySelector('#confirm-payment-modal .btn-success');
+  btn.textContent = 'Confirming…'; btn.disabled = true;
+  try {
+    await api('/dues/payment', 'POST', {
+      resident_id: parseInt(resId),
+      billing_month: month,
+      amount: parseFloat(amount),
+      payment_method: method,
+      reference_number: ref || null,
+      notes: notes || null
+    });
+    closeModal('confirm-payment-modal');
+    STATE.payments = await api('/dues');
+    renderDues(); refreshDashboardStats(); refreshMapMarkers();
+    const p = STATE.payments.find(x => x.billing_month === month && x.resident_id === parseInt(resId));
+    const name = p ? p.last_name + ', ' + p.first_name : 'Resident';
+    toast(`✅ Payment confirmed! ₱${parseFloat(amount).toLocaleString()} received from ${name} for ${month}.`);
+  } catch(e) { errEl.textContent = e.message; errEl.style.display = 'block'; }
+  btn.textContent = '✅ Confirm Payment'; btn.disabled = false;
+}
+
+async function recordPayment() {
   const resId  = document.getElementById('pay-resident')?.value;
   const month  = document.getElementById('pay-month')?.value;
   const amount = document.getElementById('pay-amount')?.value;
@@ -831,27 +1115,147 @@ function renderUsers() {
     </tr>`).join('');
 }
 
+function renderBlockLot() {
+  const overviewBody = document.getElementById('blocklot-overview-tbody');
+  const detailsBody = document.getElementById('blocklot-lot-details-tbody');
+  const blockSelect = document.getElementById('blocklot-block-filter');
+  if (!overviewBody || !detailsBody) return;
+
+  const blocks = ['Block A', 'Block B', 'Block C', 'Block D'];
+  const selectedBlock = blockSelect?.value || 'Block A';
+  const totalLots = 8;
+
+  overviewBody.innerHTML = blocks.map(block => {
+    const residents = STATE.residents.filter(r => r.block === block);
+    const occupied = residents.length;
+    const vacant = Math.max(0, totalLots - occupied);
+    const occupancy = totalLots > 0 ? Math.round((occupied / totalLots) * 100) : 0;
+    const fillColor = occupancy >= 80 ? 'var(--green)' : occupancy >= 60 ? 'var(--accent)' : 'var(--yellow)';
+    return `
+      <tr>
+        <td class="td-name">${block}</td>
+        <td>${totalLots}</td>
+        <td>${occupied}</td>
+        <td>${vacant}</td>
+        <td><div style="display:flex;align-items:center;gap:8px;"><div class="progress-bar" style="width:80px;"><div class="progress-fill" style="width:${occupancy}%;background:${fillColor}"></div></div>${occupancy}%</div></td>
+      </tr>
+    `;
+  }).join('');
+
+  const blockResidents = STATE.residents
+    .filter(r => r.block === selectedBlock)
+    .sort((a, b) => (a.lot_number || 0) - (b.lot_number || 0));
+
+  const lotRows = [];
+  for (let lot = 1; lot <= totalLots; lot++) {
+    const resident = blockResidents.find(r => Number(r.lot_number) === lot);
+    if (resident) {
+      const residentName = `${resident.last_name || ''}${resident.first_name ? ', ' + resident.first_name : ''}`;
+      const statusClass = resident.occupancy_status === 'Pending' ? 'badge badge-yellow' : 'badge badge-green';
+      const statusText = resident.occupancy_status || 'Occupied';
+      lotRows.push(`
+        <tr>
+          <td>Lot ${String(lot).padStart(2, '0')}</td>
+          <td>${resident.lot_area || '—'}</td>
+          <td class="td-name">${residentName}</td>
+          <td><span class="${statusClass}">${statusText}</span></td>
+        </tr>
+      `);
+    } else {
+      lotRows.push(`
+        <tr>
+          <td>Lot ${String(lot).padStart(2, '0')}</td>
+          <td>—</td>
+          <td style="color:var(--text3)">—</td>
+          <td><span class="badge" style="background:rgba(71,85,105,.2);color:#94a3b8;border:1px solid #334155;">Vacant</span></td>
+        </tr>
+      `);
+    }
+  }
+
+  const detailsTitle = document.getElementById('blocklot-details-title');
+  if (detailsTitle) detailsTitle.innerText = selectedBlock;
+  detailsBody.innerHTML = lotRows.join('');
+}
+
+function viewLotDetails(block, lot) {
+  const resident = STATE.residents.find(r => r.block === `Block ${block}` && r.lot_number == lot);
+  const content = document.getElementById('lot-details-content');
+  if (!content) return;
+
+  if (resident) {
+    const payments = STATE.payments.filter(p => p.resident_id === resident.id);
+    const latestPayment = payments.sort((a,b) => new Date(b.date_paid || b.created_at) - new Date(a.date_paid || a.created_at))[0];
+    const outstanding = payments.filter(p => p.status !== 'Paid').reduce((sum, p) => sum + parseFloat(p.amount || 0), 0);
+
+    content.innerHTML = `
+      <div class="lot-info">
+        <div class="lot-header">
+          <h4>Block ${block}, Lot ${lot}</h4>
+          <span class="badge badge-green">Occupied</span>
+        </div>
+        <div class="lot-resident">
+          <div class="resident-avatar">${resident.first_name[0]}${resident.last_name[0]}</div>
+          <div class="resident-info">
+            <div class="resident-name">${resident.last_name}, ${resident.first_name}</div>
+            <div class="resident-details">Owner since ${resident.year_of_residency || 'N/A'} • ${resident.occupancy_status || 'N/A'}</div>
+          </div>
+        </div>
+        <div class="lot-stats">
+          <div class="stat-item">
+            <span class="stat-label">Monthly Dues</span>
+            <span class="stat-value">₱500</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Last Payment</span>
+            <span class="stat-value">${latestPayment ? (latestPayment.date_paid_fmt || latestPayment.date_paid || 'N/A') : 'None'}</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Outstanding</span>
+            <span class="stat-value">₱${outstanding.toLocaleString()}</span>
+          </div>
+        </div>
+      </div>
+    `;
+  } else {
+    content.innerHTML = `
+      <div class="lot-info">
+        <div class="lot-header">
+          <h4>Block ${block}, Lot ${lot}</h4>
+          <span class="badge badge-gray">Vacant</span>
+        </div>
+        <div class="lot-resident">
+          <div class="resident-info">
+            <div class="resident-name">No Resident Assigned</div>
+            <div class="resident-details">This lot is currently vacant.</div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+  openModal('lot-details-modal');
+}
+
 async function saveUser() {
   const fname    = document.getElementById('usr-fname')?.value.trim();
   const lname    = document.getElementById('usr-lname')?.value.trim();
   const username = document.getElementById('usr-username')?.value.trim();
+  const email    = document.getElementById('usr-email')?.value.trim();
   const role     = document.getElementById('usr-role')?.value;
-  const pass     = document.getElementById('usr-pass')?.value;
-  const pass2    = document.getElementById('usr-pass2')?.value;
   const status   = document.getElementById('usr-status')?.value;
   const errEl    = document.getElementById('usr-error');
-  if (!fname||!lname||!username||!pass) { errEl.textContent='All fields are required.'; errEl.style.display='block'; return; }
-  if (pass!==pass2) { errEl.textContent='Passwords do not match.'; errEl.style.display='block'; return; }
+  if (!fname||!lname||!username) { errEl.textContent='First name, last name and username are required.'; errEl.style.display='block'; return; }
+  const generatedPassword = `${username}123`;
   const btn = document.querySelector('#add-user-modal .btn-primary');
   btn.textContent='Creating…'; btn.disabled=true;
   try {
-    await api('/users', 'POST', { first_name:fname, last_name:lname, username, role, password:pass, status });
+    await api('/users', 'POST', { first_name:fname, last_name:lname, username, email: email || null, role, password:generatedPassword, status });
     closeModal('add-user-modal');
-    ['usr-fname','usr-lname','usr-username','usr-pass','usr-pass2'].forEach(id=>{if(document.getElementById(id))document.getElementById(id).value='';});
+    ['usr-fname','usr-lname','usr-username','usr-email'].forEach(id=>{if(document.getElementById(id))document.getElementById(id).value='';});
     errEl.style.display='none';
     STATE.users = await api('/users');
     renderUsers();
-    toast(`🔑 Account "${username}" created as ${role}!`);
+    toast(`🔑 Account "${username}" created as ${role}. Password: ${generatedPassword}`);
   } catch(e) { errEl.textContent=e.message; errEl.style.display='block'; }
   btn.textContent='✓ Create Account'; btn.disabled=false;
 }
@@ -1139,26 +1543,53 @@ function renderGuardDashboard() {
   if (gv[1]) gv[1].textContent = STATE.incidents.filter(i=>i.status==='Open').length;
 }
 
-// ── HOMEOWNER Dashboard ───────────────────────────────────────────────────────
+// ── HOMEOWNER Dashboard ───────────────────────────────────────────────────
 function renderHomeownerDashboard() {
   const myResident = STATE.residents.find(r =>
+    (r.user_id && r.user_id === SESSION.userId) ||
     (r.username && r.username === SESSION.username) ||
     (r.first_name + ' ' + r.last_name).toLowerCase() === SESSION.name.toLowerCase()
-  ) || STATE.residents[0];
+  );
 
   // Stat: property
   const propEl = document.getElementById('ho-stat-property');
-  if (propEl && myResident) propEl.textContent = myResident.block.replace('Block ','B-') + ' / L-' + String(myResident.lot_number).padStart(2,'0');
+  if (propEl) {
+    propEl.textContent = myResident
+      ? myResident.block.replace('Block ','B-') + ' / L-' + String(myResident.lot_number).padStart(2,'0')
+      : 'N/A';
+  }
 
-  // Stat: dues
+  // Stat: dues — show pending bill count if any
   const myPayments = myResident
     ? STATE.payments.filter(p => p.resident_id === myResident.id || (p.last_name === myResident.last_name && p.first_name === myResident.first_name))
     : [];
+  const pendingBills = myPayments.filter(p => p.status !== 'Paid');
   const latestPay = [...myPayments].sort((a,b)=>new Date(b.billing_month)-new Date(a.billing_month))[0];
   const duesEl    = document.getElementById('ho-stat-dues');
   const duesSubEl = document.getElementById('ho-stat-dues-sub');
-  if (duesEl)    duesEl.textContent    = latestPay ? '₱'+parseFloat(latestPay.amount||0).toLocaleString() : '—';
-  if (duesSubEl) duesSubEl.textContent = latestPay ? latestPay.status+' · '+latestPay.billing_month : 'No records';
+  if (duesEl)    duesEl.textContent    = pendingBills.length > 0 ? pendingBills.length : (latestPay ? '✓' : '—');
+  if (duesSubEl) duesSubEl.textContent = pendingBills.length > 0
+    ? `${pendingBills.length} bill${pendingBills.length>1?'s':''} pending — visit office`
+    : (latestPay ? 'All paid · '+latestPay.billing_month : 'No records');
+
+  // Pending bills alert banner — show if any unpaid bills issued
+  const existingBanner = document.getElementById('ho-bills-banner');
+  if (existingBanner) existingBanner.remove();
+  if (pendingBills.length > 0) {
+    const qActions = document.querySelector('#panel-dashboard-homeowner > div:nth-child(2)');
+    if (qActions) {
+      const banner = document.createElement('div');
+      banner.id = 'ho-bills-banner';
+      banner.className = 'alert alert-yellow';
+      banner.style.cssText = 'margin-bottom:14px;cursor:pointer;';
+      banner.onclick = () => showPanel('dues', document.querySelector('[onclick*=dues]'));
+      banner.innerHTML = `<span class="alert-icon">📋</span><div>
+        <strong>${pendingBills.length} pending bill${pendingBills.length>1?'s':''} issued by Admin</strong><br>
+        <span style="font-size:11px;">Total due: ₱${pendingBills.reduce((s,p)=>s+parseFloat(p.amount||0),0).toLocaleString()} — Please come to the office to pay. Click to view.</span>
+      </div>`;
+      qActions.before(banner);
+    }
+  }
 
   // Stat: visitors
   const myBlock    = myResident?.block;
@@ -1196,11 +1627,25 @@ function renderHomeownerDashboard() {
       : '<tr><td colspan="4" style="text-align:center;padding:16px;color:var(--text3);">No payment records found.</td></tr>';
   }
 
-  // Recent visitors for this property
+  // Recent visitors for this property (also shows visitor notifications)
   const visFeed = document.getElementById('ho-visitors-feed');
   if (visFeed) {
-    visFeed.innerHTML = myVisitors.length
-      ? myVisitors.slice(0,5).map(visitorRow).join('')
+    // Highlight visitors currently inside
+    const inside = myVisitors.filter(v=>v.status==='Inside');
+    const rest   = myVisitors.filter(v=>v.status!=='Inside').slice(0,3);
+    const allShow = [...inside, ...rest];
+    visFeed.innerHTML = allShow.length
+      ? allShow.map(v => {
+          const isNew = v.status === 'Inside';
+          return `<div class="visitor-row" style="${isNew?'background:rgba(59,130,246,.05);border-radius:8px;':''}">
+            <div class="visitor-avatar">${({Delivery:'📦','Guest Visit':'🧑','Utility/Repair':'🔧',Family:'👨‍👩‍👧',Business:'💼',Other:'🚗'})[v.purpose]||'🚗'}</div>
+            <div class="visitor-info">
+              <div class="visitor-name">${v.visitor_name}${isNew?' <span style="font-size:10px;color:var(--accent);font-weight:600;">● INSIDE</span>':''}</div>
+              <div class="visitor-detail">${v.purpose} · IN: ${v.time_in_fmt||v.time_in||'—'}${v.time_out_fmt?' OUT: '+v.time_out_fmt:''}</div>
+            </div>
+            ${badge(v.status)}
+          </div>`;
+        }).join('')
       : '<div style="color:var(--text3);font-size:12px;text-align:center;padding:20px;">No recent visitors for your property.</div>';
   }
 }
@@ -1218,9 +1663,10 @@ function prepareHomeownerPayModal() {
 
   // Find this homeowner's resident record
   const myResident = STATE.residents.find(r =>
+    (r.user_id && r.user_id === SESSION.userId) ||
     (r.username && r.username === SESSION.username) ||
     (r.first_name + ' ' + r.last_name).toLowerCase() === SESSION.name.toLowerCase()
-  ) || STATE.residents[0];
+  );
 
   if (myResident) {
     document.getElementById('ho-pay-resident-id').value = myResident.id;
@@ -1236,6 +1682,13 @@ function prepareHomeownerPayModal() {
       const color = {Paid:'var(--green)',Overdue:'var(--red)',Partial:'var(--yellow)',Unpaid:'var(--text3)'}[latest.status]||'var(--text3)';
       statusEl.innerHTML = `Last payment: <strong style="color:${color}">${latest.status}</strong> — ${latest.billing_month} · ₱${parseFloat(latest.amount||0).toLocaleString()}`;
     }
+  } else {
+    const nameEl = document.getElementById('ho-pay-resident-name');
+    const lotEl = document.getElementById('ho-pay-resident-lot');
+    if (nameEl) nameEl.textContent = 'No registered property';
+    if (lotEl) lotEl.textContent = 'N/A';
+    const statusEl = document.getElementById('ho-pay-current-status');
+    if (statusEl) statusEl.textContent = 'Add your lot record to view dues information.';
   }
 }
 

@@ -262,6 +262,7 @@
         <button class="btn btn-success" style="flex:1;padding:13px;font-size:13px;justify-content:center;border-radius:10px;" onclick="openModal('ho-pay-modal')">💳 Pay My Monthly Dues</button>
         <button class="btn btn-danger" style="flex:1;padding:13px;font-size:13px;justify-content:center;border-radius:10px;" onclick="openModal('incident-modal')">🆘 Report an Incident</button>
         <button class="btn btn-ghost" style="flex:1;padding:13px;font-size:13px;justify-content:center;border-radius:10px;" onclick="showPanel('announcements',document.querySelector('[onclick*=announcements]'))">📢 View Announcements</button>
+        <button class="btn btn-ghost" style="flex:1;padding:13px;font-size:13px;justify-content:center;border-radius:10px;" onclick="openHomeownerAccountModal()">👤 My Profile</button>
       </div>
 
       <div class="grid-2-1">
@@ -344,7 +345,7 @@
     <!-- ════ RESIDENTS ════ -->
     <div class="panel" id="panel-residents">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-        <div><div style="font-family:'Syne',sans-serif;font-weight:700;font-size:18px;">Resident Records</div><div style="font-size:12px;color:var(--text2);">192 occupied units registered</div></div>
+        <div><div style="font-family:'Syne',sans-serif;font-weight:700;font-size:18px;">Resident Records</div><div id="resident-panel-summary" style="font-size:12px;color:var(--text2);">0 occupied units registered</div></div>
         <div style="display:flex;gap:8px;"><button class="btn btn-ghost">Export CSV</button><button class="btn btn-primary" onclick="openModal('add-resident-modal')">+ Add Resident</button></div>
       </div>
       <div class="card">
@@ -370,7 +371,7 @@
           </table>
         </div>
         <div style="padding:12px 16px;display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--border);">
-          <span style="font-size:12px;color:var(--text2);">Showing 7 of 192 residents</span>
+          <span id="resident-panel-pagination" style="font-size:12px;color:var(--text2);">Showing 0 of 0 residents</span>
           <div style="display:flex;gap:6px;"><button class="btn btn-ghost">← Prev</button><button class="btn btn-primary">Next →</button></div>
         </div>
       </div>
@@ -385,26 +386,19 @@
           <div class="table-wrap">
             <table>
               <thead><tr><th>Block</th><th>Total Lots</th><th>Occupied</th><th>Vacant</th><th>Occupancy</th></tr></thead>
-              <tbody>
-                <tr><td class="td-name">Block A</td><td>62</td><td>54</td><td>8</td><td><div style="display:flex;align-items:center;gap:8px;"><div class="progress-bar" style="width:80px;"><div class="progress-fill" style="width:87%;background:var(--green)"></div></div>87%</div></td></tr>
-                <tr><td class="td-name">Block B</td><td>58</td><td>46</td><td>12</td><td><div style="display:flex;align-items:center;gap:8px;"><div class="progress-bar" style="width:80px;"><div class="progress-fill" style="width:79%;background:var(--accent)"></div></div>79%</div></td></tr>
-                <tr><td class="td-name">Block C</td><td>74</td><td>52</td><td>22</td><td><div style="display:flex;align-items:center;gap:8px;"><div class="progress-bar" style="width:80px;"><div class="progress-fill" style="width:70%;background:var(--yellow)"></div></div>70%</div></td></tr>
-                <tr><td class="td-name">Block D</td><td>54</td><td>40</td><td>14</td><td><div style="display:flex;align-items:center;gap:8px;"><div class="progress-bar" style="width:80px;"><div class="progress-fill" style="width:74%;background:var(--yellow)"></div></div>74%</div></td></tr>
+              <tbody id="blocklot-overview-tbody">
+                <tr><td colspan="5" style="color:var(--text3);text-align:center;padding:16px;">Loading block overview…</td></tr>
               </tbody>
             </table>
           </div>
         </div>
         <div class="card">
-          <div class="card-header"><div class="card-title">📋 Lot Details — Block A</div><select class="form-input" style="width:130px;padding:6px 10px;"><option>Block A</option><option>Block B</option><option>Block C</option><option>Block D</option></select></div>
+          <div class="card-header"><div class="card-title">📋 Lot Details — <span id="blocklot-details-title">Block A</span></div><select id="blocklot-block-filter" class="form-input" style="width:130px;padding:6px 10px;" onchange="renderBlockLot()"><option>Block A</option><option>Block B</option><option>Block C</option><option>Block D</option></select></div>
           <div class="table-wrap" style="max-height:260px;overflow-y:auto;">
             <table>
               <thead><tr><th>Lot #</th><th>Area (sqm)</th><th>Resident</th><th>Status</th></tr></thead>
-              <tbody>
-                <tr><td>Lot 01</td><td>120</td><td class="td-name">Villanueva, J.</td><td><span class="badge badge-green">Occupied</span></td></tr>
-                <tr><td>Lot 02</td><td>100</td><td style="color:var(--text3)">—</td><td><span class="badge" style="background:rgba(71,85,105,.2);color:#94a3b8;border:1px solid #334155;">Vacant</span></td></tr>
-                <tr><td>Lot 03</td><td>120</td><td class="td-name">Santos, M.</td><td><span class="badge badge-green">Occupied</span></td></tr>
-                <tr><td>Lot 04</td><td>140</td><td class="td-name">Aquino, P.</td><td><span class="badge badge-yellow">Pending</span></td></tr>
-                <tr><td>Lot 05</td><td>120</td><td class="td-name">Bautista, C.</td><td><span class="badge badge-green">Occupied</span></td></tr>
+              <tbody id="blocklot-lot-details-tbody">
+                <tr><td colspan="4" style="color:var(--text3);text-align:center;padding:16px;">Loading lot details…</td></tr>
               </tbody>
             </table>
           </div>
@@ -444,26 +438,49 @@
     <!-- ════ DUES ════ -->
     <div class="panel" id="panel-dues">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-        <div><div style="font-family:'Syne',sans-serif;font-weight:700;font-size:18px;">Dues & Payment — Bayranan Module</div><div style="font-size:12px;color:var(--text2);">June 2025 billing cycle</div></div>
-        <div style="display:flex;gap:8px;"><button class="btn btn-ghost">Export Report</button><button class="btn btn-primary" onclick="openModal('add-payment-modal')">+ Record Payment</button></div>
+        <div><div style="font-family:'Syne',sans-serif;font-weight:700;font-size:18px;">Dues & Payment — Bayranan Module</div><div style="font-size:12px;color:var(--text2);" id="dues-cycle-label">Billing cycle</div></div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-ghost" onclick="dlDues()">Export CSV</button>
+          <!-- Admin only: Issue Bill + Record Payment -->
+          <button class="btn btn-ghost" id="issue-bill-btn" onclick="openIssueBillModal()" style="display:none;">📋 Issue Bill</button>
+          <button class="btn btn-primary" id="record-payment-btn" onclick="openModal('add-payment-modal')" style="display:none;">+ Record Payment</button>
+        </div>
       </div>
-      <div class="stats-grid" style="grid-template-columns:repeat(4,1fr);">
-        <div class="stat-card green"><div class="stat-icon">✅</div><div class="stat-value">145</div><div class="stat-label">Paid</div><div class="stat-change">₱72,500 collected</div></div>
-        <div class="stat-card red"><div class="stat-icon">❌</div><div class="stat-value">7</div><div class="stat-label">Overdue</div><div class="stat-change">₱3,500 pending</div></div>
-        <div class="stat-card yellow"><div class="stat-icon">⏳</div><div class="stat-value">40</div><div class="stat-label">Unpaid</div><div class="stat-change">Due this month</div></div>
+      <!-- Stats — admin/guard only -->
+      <div class="stats-grid" style="grid-template-columns:repeat(4,1fr);" id="dues-stats-row">
+        <div class="stat-card green"><div class="stat-icon">✅</div><div class="stat-value">—</div><div class="stat-label">Paid</div><div class="stat-change">collected</div></div>
+        <div class="stat-card red"><div class="stat-icon">❌</div><div class="stat-value">—</div><div class="stat-label">Overdue</div><div class="stat-change">pending</div></div>
+        <div class="stat-card yellow"><div class="stat-icon">⏳</div><div class="stat-value">—</div><div class="stat-label">Unpaid</div><div class="stat-change">Due this month</div></div>
         <div class="stat-card blue"><div class="stat-icon">💰</div><div class="stat-value">₱500</div><div class="stat-label">Monthly Rate</div><div class="stat-change">Per household</div></div>
       </div>
-      <div class="card">
-        <div class="card-header"><div class="card-title">💳 Payment Records</div><select class="form-input" style="width:140px;padding:7px 10px;"><option>All Status</option><option>Paid</option><option>Unpaid</option><option>Overdue</option></select></div>
+
+      <!-- HOMEOWNER: Pending bills issued by admin -->
+      <div class="card" id="ho-pending-bills" style="display:none;margin-bottom:14px;border:1px solid rgba(245,158,11,.4);">
+        <div class="card-header">
+          <div class="card-title">📋 Bills Issued to You</div>
+          <span id="ho-pending-count" style="font-size:11px;color:var(--text2);"></span>
+        </div>
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Ref #</th><th>Resident</th><th>Block/Lot</th><th>Month</th><th>Amount</th><th>Date Paid</th><th>Method</th><th>Status</th><th>Action</th></tr></thead>
-            <tbody>
-              <tr><td>PAY-001</td><td class="td-name">Santos, Maria</td><td>A / 03</td><td>June 2025</td><td>₱500</td><td>Jun 1</td><td>GCash</td><td><span class="badge badge-green">Paid</span></td><td><button class="btn btn-ghost" style="padding:4px 8px;font-size:11px;">Receipt</button></td></tr>
-              <tr><td>PAY-002</td><td class="td-name">Reyes, Juan</td><td>B / 07</td><td>Apr–Jun</td><td>₱1,500</td><td>—</td><td>—</td><td><span class="badge badge-red">Overdue</span></td><td><button class="btn btn-ghost" style="padding:4px 8px;font-size:11px;">Remind</button></td></tr>
-              <tr><td>PAY-003</td><td class="td-name">Cruz, Ana</td><td>C / 12</td><td>June 2025</td><td>₱250</td><td>Jun 5</td><td>Cash</td><td><span class="badge badge-yellow">Partial</span></td><td><button class="btn btn-ghost" style="padding:4px 8px;font-size:11px;">Confirm</button></td></tr>
-              <tr><td>PAY-004</td><td class="td-name">Lim, Grace</td><td>A / 11</td><td>June 2025</td><td>₱500</td><td>Jun 3</td><td>Bank Transfer</td><td><span class="badge badge-green">Paid</span></td><td><button class="btn btn-ghost" style="padding:4px 8px;font-size:11px;">Receipt</button></td></tr>
-              <tr><td>PAY-005</td><td class="td-name">Mendoza, P.</td><td>C / 08</td><td>May–Jun</td><td>₱1,000</td><td>—</td><td>—</td><td><span class="badge badge-red">Overdue</span></td><td><button class="btn btn-ghost" style="padding:4px 8px;font-size:11px;">Remind</button></td></tr>
+            <thead><tr><th>Month</th><th>Description</th><th>Amount</th><th>Issued By</th><th>Status</th><th>Action</th></tr></thead>
+            <tbody id="ho-bills-tbody"><tr><td colspan="6" style="text-align:center;padding:20px;color:var(--text3);">Loading…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ADMIN/GUARD: All payment records -->
+      <div class="card" id="dues-all-card">
+        <div class="card-header">
+          <div class="card-title">💳 Payment Records</div>
+          <select class="form-input" id="dues-filter" style="width:140px;padding:7px 10px;" onchange="renderDues()">
+            <option value="">All Status</option><option>Paid</option><option>Unpaid</option><option>Overdue</option><option>Partial</option>
+          </select>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Ref #</th><th>Resident</th><th>Block/Lot</th><th>Month</th><th>Amount</th><th>Issued</th><th>Date Paid</th><th>Method</th><th>Status</th><th>Action</th></tr></thead>
+            <tbody id="dues-tbody">
+              <tr><td colspan="10" style="text-align:center;padding:20px;color:var(--text3);">Loading…</td></tr>
             </tbody>
           </table>
         </div>
@@ -656,6 +673,7 @@
         <div class="form-group"><label class="form-label">Year of Residency</label><input class="form-input" id="res-year" type="number" placeholder="2025"></div>
         <div class="form-group"><label class="form-label">Occupancy Status</label><select class="form-input" id="res-occ"><option>Owner</option><option>Tenant</option><option>Co-owner</option></select></div>
       </div>
+      <div class="form-group"><label class="form-label">Link Homeowner Account</label><select class="form-input" id="res-user"><option value="">— None —</option></select><div style="font-size:11px;color:var(--text3);margin-top:5px;">Select an existing homeowner user to connect this resident to their dashboard.</div></div>
       <div class="form-group"><label class="form-label">Contact Number (Admin Only)</label><input class="form-input" id="res-contact" placeholder="+63..."></div>
       <div id="res-error" style="color:var(--red);font-size:12px;margin-top:4px;display:none;"></div>
     </div>
@@ -673,6 +691,15 @@
         <div class="form-group"><label class="form-label">Visiting Block *</label><select class="form-input" id="vis-block"><option>Block A</option><option>Block B</option><option>Block C</option><option>Block D</option></select></div>
         <div class="form-group"><label class="form-label">Lot Number *</label><input class="form-input" id="vis-lot" placeholder="e.g. 03"></div>
       </div>
+      <div class="form-group">
+        <label class="form-label">Homeowner Being Visited</label>
+        <select class="form-input" id="vis-homeowner">
+          <option value="">— Select homeowner (optional) —</option>
+        </select>
+        <div id="vis-homeowner-notif" style="font-size:11px;color:var(--accent2);margin-top:5px;display:none;">
+          💬 Homeowner will be notified of this visitor.
+        </div>
+      </div>
       <div class="form-row">
         <div class="form-group"><label class="form-label">Purpose of Visit</label><select class="form-input" id="vis-purpose"><option>Guest Visit</option><option>Delivery</option><option>Utility/Repair</option><option>Business</option><option>Family</option><option>Other</option></select></div>
         <div class="form-group"><label class="form-label">ID Type Deposited *</label><input class="form-input" id="vis-id-type" placeholder="e.g. PhilSys ID"></div>
@@ -684,6 +711,61 @@
       <div id="vis-error" style="color:var(--red);font-size:12px;margin-top:4px;display:none;"></div>
     </div>
     <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('add-visitor-modal')">Cancel</button><button class="btn btn-success" onclick="saveVisitor()">✓ Log Entry</button></div>
+  </div>
+</div>
+
+<!-- Issue Bill Modal (Admin only) -->
+<div class="modal-overlay" id="issue-bill-modal">
+  <div class="modal" style="max-width:500px;">
+    <div class="modal-header"><div class="modal-title">📋 Issue Due Bill</div><div class="modal-close" onclick="closeModal('issue-bill-modal')">✕</div></div>
+    <div class="modal-body">
+      <div class="alert alert-blue" style="margin-bottom:14px;"><span class="alert-icon">💡</span><div style="font-size:12px;">The homeowner will see this bill when they log in. They must come to the office to pay. You then confirm their payment here.</div></div>
+      <div class="form-group">
+        <label class="form-label">Resident *</label>
+        <select class="form-input" id="issue-resident"></select>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Billing Month *</label><input class="form-input" type="month" id="issue-month"></div>
+        <div class="form-group"><label class="form-label">Amount (₱) *</label><input class="form-input" type="number" id="issue-amount" placeholder="500.00" value="500"></div>
+      </div>
+      <div class="form-group"><label class="form-label">Description</label><input class="form-input" id="issue-desc" placeholder="e.g. Monthly association dues for June 2026"></div>
+      <div class="form-group"><label class="form-label">Notes (optional)</label><textarea class="form-input" id="issue-notes" rows="2" placeholder="Remarks visible to homeowner..."></textarea></div>
+      <div id="issue-error" style="color:var(--red);font-size:12px;margin-top:4px;display:none;"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('issue-bill-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveIssueBill()">📋 Issue Bill</button>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm Payment Modal (Admin confirms homeowner paid at office) -->
+<div class="modal-overlay" id="confirm-payment-modal">
+  <div class="modal" style="max-width:460px;">
+    <div class="modal-header"><div class="modal-title">✅ Confirm Payment Received</div><div class="modal-close" onclick="closeModal('confirm-payment-modal')">✕</div></div>
+    <div class="modal-body">
+      <div id="confirm-bill-info" style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:16px;font-size:13px;"></div>
+      <input type="hidden" id="confirm-due-id">
+      <input type="hidden" id="confirm-resident-id">
+      <input type="hidden" id="confirm-billing-month">
+      <input type="hidden" id="confirm-amount-val">
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Amount Received (₱) *</label><input class="form-input" type="number" id="confirm-amount" placeholder="500.00"></div>
+        <div class="form-group">
+          <label class="form-label">Payment Method</label>
+          <select class="form-input" id="confirm-method">
+            <option>Cash</option><option>GCash</option><option>Bank Transfer</option><option>Check</option><option>Other</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group"><label class="form-label">Reference / OR No. (optional)</label><input class="form-input" id="confirm-ref" placeholder="Official receipt or reference number"></div>
+      <div class="form-group"><label class="form-label">Notes (optional)</label><textarea class="form-input" id="confirm-notes" rows="2" placeholder="e.g. Paid in full, change given, etc."></textarea></div>
+      <div id="confirm-error" style="color:var(--red);font-size:12px;margin-top:4px;display:none;"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('confirm-payment-modal')">Cancel</button>
+      <button class="btn btn-success" onclick="confirmPayment()">✅ Confirm Payment</button>
+    </div>
   </div>
 </div>
 
@@ -760,15 +842,36 @@
         <div class="form-group"><label class="form-label">Last Name *</label><input class="form-input" id="usr-lname" placeholder="Last"></div>
       </div>
       <div class="form-group"><label class="form-label">Username *</label><input class="form-input" id="usr-username" placeholder="e.g. juan_reyes"></div>
+      <div class="form-group"><label class="form-label">Email</label><input class="form-input" type="email" id="usr-email" placeholder="you@example.com"></div>
       <div class="form-group"><label class="form-label">Role *</label><select class="form-input" id="usr-role"><option>Administrator</option><option>Guard</option><option>Homeowner</option></select></div>
-      <div class="form-row">
-        <div class="form-group"><label class="form-label">Password *</label><input class="form-input" type="password" id="usr-pass" placeholder="Set password"></div>
-        <div class="form-group"><label class="form-label">Confirm Password *</label><input class="form-input" type="password" id="usr-pass2" placeholder="Confirm"></div>
-      </div>
+      <div class="form-note" style="font-size:12px;color:var(--text3);margin-top:-4px;">Password will be generated automatically as username + 4 random digits.</div>
       <div class="form-group"><label class="form-label">Account Status</label><select class="form-input" id="usr-status"><option>Active</option><option>Inactive</option></select></div>
       <div id="usr-error" style="color:var(--red);font-size:12px;margin-top:4px;display:none;"></div>
     </div>
     <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('add-user-modal')">Cancel</button><button class="btn btn-primary" onclick="saveUser()">✓ Create Account</button></div>
+  </div>
+</div>
+
+<!-- Account Settings Modal -->
+<div class="modal-overlay" id="account-settings-modal">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">⚙️ Account Settings</div><div class="modal-close" onclick="closeModal('account-settings-modal')">✕</div></div>
+    <div class="modal-body">
+      <div class="form-group"><label class="form-label">Full Name</label><div class="form-input" id="acct-fullname" style="background:var(--bg2);border:none;color:var(--text);">Loading…</div></div>
+      <div class="form-group"><label class="form-label">Username</label><div class="form-input" id="acct-username" style="background:var(--bg2);border:none;color:var(--text);">Loading…</div></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Role</label><div class="form-input" id="acct-role" style="background:var(--bg2);border:none;color:var(--text);">Loading…</div></div>
+        <div class="form-group"><label class="form-label">Status</label><div class="form-input" id="acct-status" style="background:var(--bg2);border:none;color:var(--text);">Loading…</div></div>
+      </div>
+      <div class="form-group"><label class="form-label">Linked Property</label><div class="form-input" id="acct-property" style="background:var(--bg2);border:none;color:var(--text);">Loading…</div></div>
+      <div class="form-group"><label class="form-label">Email</label><input class="form-input" type="email" id="acct-email" placeholder="you@example.com"></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">New Password</label><input class="form-input" type="password" id="acct-pass" placeholder="Leave blank to keep current"></div>
+        <div class="form-group"><label class="form-label">Confirm Password</label><input class="form-input" type="password" id="acct-pass2" placeholder="Confirm new password"></div>
+      </div>
+      <div id="acct-error" style="color:var(--red);font-size:12px;margin-top:4px;display:none;"></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('account-settings-modal')">Cancel</button><button class="btn btn-primary" onclick="saveAccountSettings()">Save Changes</button></div>
   </div>
 </div>
 

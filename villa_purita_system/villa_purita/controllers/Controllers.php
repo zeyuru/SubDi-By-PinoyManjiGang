@@ -69,8 +69,20 @@ class UserController {
         }
         if (strlen($d['password']) < 6) Response::error('Password must be at least 6 characters.');
         if ($this->model->usernameExists($d['username'])) Response::error('Username already taken.');
+        if (!empty($d['email']) && $this->model->emailExists($d['email'])) Response::error('Email already taken.');
         $id = $this->model->create($d);
         Response::json(['id' => $id, 'message' => 'User created successfully'], 201);
+    }
+
+    public function updateAccount(): void {
+        AuthMiddleware::handle();
+        $d = json_decode(file_get_contents('php://input'), true) ?? [];
+        $userId = Session::getUserId();
+        if (!$userId) Response::error('Authentication required.', 401);
+        if (!empty($d['email']) && $this->model->emailExists($d['email'], $userId)) Response::error('Email already taken.');
+        if (!empty($d['password']) && strlen($d['password']) < 6) Response::error('Password must be at least 6 characters.');
+        $this->model->updateAccount($userId, $d);
+        Response::json(['updated' => true]);
     }
 
     public function updateStatus(): void {
@@ -139,6 +151,9 @@ class ResidentController {
         }
         if ($this->model->blockLotExists($d['block'], $d['lot_number'])) {
             Response::error("{$d['block']} Lot {$d['lot_number']} already has a registered resident.");
+        }
+        if (!empty($d['user_id']) && $this->model->userIdExists((int)$d['user_id'])) {
+            Response::error('That homeowner account is already linked to another resident.');
         }
         $id = $this->model->create($d);
         Response::json(['id' => $id, 'message' => 'Resident added successfully'], 201);

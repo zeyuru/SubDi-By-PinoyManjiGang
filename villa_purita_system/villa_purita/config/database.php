@@ -19,6 +19,18 @@ class Database {
                 PDO::ATTR_EMULATE_PREPARES   => false,
             ]
         );
+        $this->ensureEmailColumn();
+    }
+
+    private function ensureEmailColumn(): void {
+        try {
+            $stmt = $this->pdo->query("SHOW COLUMNS FROM users LIKE 'email'");
+            if ($stmt && $stmt->rowCount() === 0) {
+                $this->pdo->exec("ALTER TABLE users ADD COLUMN email varchar(150) DEFAULT NULL AFTER username");
+            }
+        } catch (PDOException $e) {
+            error_log('[Villa Purita Schema] Unable to ensure users.email column: ' . $e->getMessage());
+        }
     }
 
     public static function getInstance(): self {

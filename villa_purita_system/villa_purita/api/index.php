@@ -67,6 +67,8 @@ try {
             => (new UserController())->store(),
         $method === 'POST' && $uri === '/users/status'
             => (new UserController())->updateStatus(),
+        $method === 'POST' && $uri === '/users/account'
+            => (new UserController())->updateAccount(),
         $method === 'DELETE' && $uri === '/users'
             => (new UserController())->destroy(),
 
@@ -123,7 +125,15 @@ try {
     };
 } catch (PDOException $e) {
     error_log('[Villa Purita DB Error] ' . $e->getMessage());
-    Response::error('Database error. Please try again.', 500);
+    $msg = 'Database error. Please try again.';
+    if (strpos($e->getMessage(), 'Duplicate entry') !== false) {
+        $msg = 'Duplicate entry detected. Please use a different username or email.';
+    } elseif (strpos($e->getMessage(), 'Unknown column') !== false) {
+        $msg = 'Database schema mismatch: missing required column. Please restart the app or update the database schema.';
+    } elseif (strpos($e->getMessage(), 'cannot be null') !== false) {
+        $msg = 'Missing required data. Please ensure all required fields are filled.';
+    }
+    Response::error($msg, 500);
 } catch (Throwable $e) {
     error_log('[Villa Purita Error] ' . $e->getMessage());
     Response::error('Server error: ' . $e->getMessage(), 500);

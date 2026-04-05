@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Mar 09, 2026 at 04:37 PM
+-- Generation Time: Apr 05, 2026 at 03:56 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -57,6 +57,14 @@ CREATE TABLE `announcements` (
   `created_at` datetime NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+--
+-- Dumping data for table `announcements`
+--
+
+INSERT INTO `announcements` (`id`, `title`, `content`, `category`, `target_audience`, `post_date`, `expiry_date`, `posted_by`, `archived`, `created_at`) VALUES
+(1, 'HELLO GUYS', 'WASSUP', 'General', 'All Homeowners', '2026-03-11', NULL, 1, 0, '2026-03-11 21:43:51'),
+(2, 'WASSUP', 'HEYYY', 'General', 'All Homeowners', '2026-03-11', NULL, 1, 0, '2026-03-11 22:14:08');
+
 -- --------------------------------------------------------
 
 --
@@ -74,6 +82,9 @@ CREATE TABLE `dues` (
   `reference_number` varchar(100) DEFAULT NULL,
   `confirmed_by` int(10) UNSIGNED DEFAULT NULL,
   `notes` text DEFAULT NULL,
+  `description` varchar(255) DEFAULT NULL,
+  `issued_by` int(10) UNSIGNED DEFAULT NULL,
+  `issued_at` datetime DEFAULT NULL,
   `created_at` datetime NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -105,7 +116,8 @@ CREATE TABLE `incidents` (
 
 INSERT INTO `incidents` (`id`, `incident_type`, `description`, `priority`, `block`, `lot_number`, `latitude`, `longitude`, `reported_by`, `status`, `resolution_notes`, `created_at`, `updated_at`) VALUES
 (1, 'Fire', 'SUNOG!!!!!', 'Medium', 'Block A', '12', NULL, NULL, 1, 'Resolved', '', '2026-03-09 23:34:52', '2026-03-09 23:36:27'),
-(2, 'Theft/Robbery', 'kawatan yawa', 'High', 'Block A', '13', NULL, NULL, 4, 'Open', NULL, '2026-03-09 23:36:49', '2026-03-09 23:36:49');
+(2, 'Theft/Robbery', 'kawatan yawa', 'High', 'Block A', '13', NULL, NULL, 4, 'Resolved', '', '2026-03-09 23:36:49', '2026-03-12 23:20:30'),
+(3, 'Vandalism', 'animal ka', 'Medium', 'Block A', NULL, NULL, NULL, 1, 'Resolved', '', '2026-03-12 23:20:40', '2026-03-12 23:29:32');
 
 -- --------------------------------------------------------
 
@@ -163,7 +175,10 @@ INSERT INTO `notifications` (`id`, `user_id`, `type`, `title`, `message`, `refer
 (3, 5, 'incident', '🚨 Medium — Fire', 'Location: Block A Lot 12', 1, 0, '2026-03-09 23:34:52'),
 (4, 2, 'incident', '🚨 High — Theft/Robbery', 'Location: Block A Lot 13', 2, 0, '2026-03-09 23:36:49'),
 (5, 3, 'incident', '🚨 High — Theft/Robbery', 'Location: Block A Lot 13', 2, 0, '2026-03-09 23:36:49'),
-(6, 5, 'incident', '🚨 High — Theft/Robbery', 'Location: Block A Lot 13', 2, 0, '2026-03-09 23:36:49');
+(6, 5, 'incident', '🚨 High — Theft/Robbery', 'Location: Block A Lot 13', 2, 0, '2026-03-09 23:36:49'),
+(7, 2, 'incident', '🚨 Medium — Vandalism', 'Location: Block A', 3, 0, '2026-03-12 23:20:40'),
+(8, 3, 'incident', '🚨 Medium — Vandalism', 'Location: Block A', 3, 0, '2026-03-12 23:20:40'),
+(9, 5, 'incident', '🚨 Medium — Vandalism', 'Location: Block A', 3, 0, '2026-03-12 23:20:40');
 
 -- --------------------------------------------------------
 
@@ -193,7 +208,8 @@ CREATE TABLE `residents` (
 --
 
 INSERT INTO `residents` (`id`, `lot_id`, `first_name`, `last_name`, `block`, `lot_number`, `year_of_residency`, `occupancy_status`, `contact_number`, `contact_visibility`, `status`, `user_id`, `created_at`, `deleted_at`) VALUES
-(1, NULL, 'Jodee Dwayne', 'Somera', 'Block A', '25', '2025', 'Owner', '09123456789', 'admin_only', 'Active', NULL, '2026-03-09 23:33:25', NULL);
+(1, NULL, 'Jodee Dwayne', 'Somera', 'Block A', '25', '2025', 'Owner', '09123456789', 'admin_only', 'Active', NULL, '2026-03-09 23:33:25', NULL),
+(2, NULL, 'Nash', 'Nogger', 'Block A', '67', '2024', 'Owner', '123123123', 'admin_only', 'Active', NULL, '2026-03-12 23:22:57', NULL);
 
 -- --------------------------------------------------------
 
@@ -204,6 +220,7 @@ INSERT INTO `residents` (`id`, `lot_id`, `first_name`, `last_name`, `block`, `lo
 CREATE TABLE `users` (
   `id` int(10) UNSIGNED NOT NULL,
   `username` varchar(50) NOT NULL,
+  `email` varchar(150) DEFAULT NULL,
   `password_hash` varchar(255) NOT NULL,
   `first_name` varchar(80) NOT NULL,
   `last_name` varchar(80) NOT NULL,
@@ -219,11 +236,11 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`id`, `username`, `password_hash`, `first_name`, `last_name`, `role`, `status`, `last_login`, `created_at`, `deleted_at`) VALUES
-(1, 'admin', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'HOA', 'Administrator', 'Administrator', 'Active', '2026-03-09 23:31:32', '2026-03-09 22:30:07', NULL),
+(1, 'admin', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'HOA', 'Administrator', 'Administrator', 'Active', '2026-03-13 14:37:29', '2026-03-09 22:30:07', NULL),
 (2, 'guard_cruz', '$argon2id$...', 'Pedro', 'Cruz', 'Guard', 'Active', NULL, '2026-03-09 22:30:07', '2026-03-09 23:30:54'),
 (3, 'guard_delacruz', '$argon2id$...', 'Ramon', 'Dela Cruz', 'Guard', 'Active', NULL, '2026-03-09 22:30:07', '2026-03-09 23:30:56'),
-(4, 'nashu', '$2y$10$e7Fl9sQ1rsDGQDdbsiPgA.fOtLR4DQfsOv8k1oaK1MSxl0ZzN3zCO', 'Nashu', 'Sanchez', 'Homeowner', 'Active', '2026-03-09 23:36:33', '2026-03-09 23:29:08', NULL),
-(5, 'ekosh', '$2y$10$a2.JHoAReAE584qeSG9isu0bhuByBpBEF0K1PN9GSO9E.u92vi8xm', 'Jericho', 'Alcala', 'Guard', 'Active', '2026-03-09 23:36:58', '2026-03-09 23:30:48', NULL);
+(4, 'nashu', '$2y$10$e7Fl9sQ1rsDGQDdbsiPgA.fOtLR4DQfsOv8k1oaK1MSxl0ZzN3zCO', 'Nashu', 'Sanchez', 'Homeowner', 'Active', '2026-03-13 14:39:12', '2026-03-09 23:29:08', NULL),
+(5, 'ekosh', '$2y$10$a2.JHoAReAE584qeSG9isu0bhuByBpBEF0K1PN9GSO9E.u92vi8xm', 'Jericho', 'Alcala', 'Guard', 'Active', '2026-03-13 14:03:52', '2026-03-09 23:30:48', NULL);
 
 -- --------------------------------------------------------
 
@@ -238,6 +255,7 @@ CREATE TABLE `visitors` (
   `visiting_resident_id` int(10) UNSIGNED DEFAULT NULL,
   `visiting_block` varchar(20) NOT NULL,
   `visiting_lot` varchar(10) NOT NULL,
+  `visiting_homeowner_id` int(10) UNSIGNED DEFAULT NULL,
   `id_type` varchar(60) DEFAULT NULL,
   `id_number` varchar(80) DEFAULT NULL,
   `vehicle_plate` varchar(20) DEFAULT NULL,
@@ -248,6 +266,14 @@ CREATE TABLE `visitors` (
   `notes` text DEFAULT NULL,
   `created_at` datetime NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `visitors`
+--
+
+INSERT INTO `visitors` (`id`, `visitor_name`, `purpose`, `visiting_resident_id`, `visiting_block`, `visiting_lot`, `visiting_homeowner_id`, `id_type`, `id_number`, `vehicle_plate`, `time_in`, `time_out`, `status`, `guard_id`, `notes`, `created_at`) VALUES
+(1, 'Aaron Ruiz', 'Delivery', NULL, 'Block A', '26', NULL, '321', '123', '321', '2026-03-12 23:22:02', '2026-03-12 23:29:38', 'Left', 5, NULL, '2026-03-12 23:22:02'),
+(2, 'KC', 'Delivery', NULL, 'Block A', '25', NULL, 'Student ID', NULL, '123123', '2026-03-13 14:01:58', '2026-03-13 14:08:55', 'Left', 5, NULL, '2026-03-13 14:01:58');
 
 -- --------------------------------------------------------
 
@@ -328,7 +354,8 @@ ALTER TABLE `dues`
   ADD UNIQUE KEY `uq_resident_month` (`resident_id`,`billing_month`),
   ADD KEY `confirmed_by` (`confirmed_by`),
   ADD KEY `idx_billing_month` (`billing_month`),
-  ADD KEY `idx_status` (`status`);
+  ADD KEY `idx_status` (`status`),
+  ADD KEY `dues_issued_by_fk` (`issued_by`);
 
 --
 -- Indexes for table `incidents`
@@ -383,7 +410,8 @@ ALTER TABLE `visitors`
   ADD KEY `visiting_resident_id` (`visiting_resident_id`),
   ADD KEY `guard_id` (`guard_id`),
   ADD KEY `idx_time_in` (`time_in`),
-  ADD KEY `idx_status` (`status`);
+  ADD KEY `idx_status` (`status`),
+  ADD KEY `visitors_homeowner_fk` (`visiting_homeowner_id`);
 
 --
 -- AUTO_INCREMENT for dumped tables
@@ -399,7 +427,7 @@ ALTER TABLE `activity_log`
 -- AUTO_INCREMENT for table `announcements`
 --
 ALTER TABLE `announcements`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `dues`
@@ -411,7 +439,7 @@ ALTER TABLE `dues`
 -- AUTO_INCREMENT for table `incidents`
 --
 ALTER TABLE `incidents`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `lots`
@@ -423,13 +451,13 @@ ALTER TABLE `lots`
 -- AUTO_INCREMENT for table `notifications`
 --
 ALTER TABLE `notifications`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 --
 -- AUTO_INCREMENT for table `residents`
 --
 ALTER TABLE `residents`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `users`
@@ -441,7 +469,7 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `visitors`
 --
 ALTER TABLE `visitors`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- Constraints for dumped tables
@@ -464,7 +492,8 @@ ALTER TABLE `announcements`
 --
 ALTER TABLE `dues`
   ADD CONSTRAINT `dues_ibfk_1` FOREIGN KEY (`resident_id`) REFERENCES `residents` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `dues_ibfk_2` FOREIGN KEY (`confirmed_by`) REFERENCES `users` (`id`) ON DELETE SET NULL;
+  ADD CONSTRAINT `dues_ibfk_2` FOREIGN KEY (`confirmed_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `dues_issued_by_fk` FOREIGN KEY (`issued_by`) REFERENCES `users` (`id`) ON DELETE SET NULL;
 
 --
 -- Constraints for table `incidents`
@@ -489,6 +518,7 @@ ALTER TABLE `residents`
 -- Constraints for table `visitors`
 --
 ALTER TABLE `visitors`
+  ADD CONSTRAINT `visitors_homeowner_fk` FOREIGN KEY (`visiting_homeowner_id`) REFERENCES `residents` (`id`) ON DELETE SET NULL,
   ADD CONSTRAINT `visitors_ibfk_1` FOREIGN KEY (`visiting_resident_id`) REFERENCES `residents` (`id`) ON DELETE SET NULL,
   ADD CONSTRAINT `visitors_ibfk_2` FOREIGN KEY (`guard_id`) REFERENCES `users` (`id`) ON DELETE SET NULL;
 COMMIT;

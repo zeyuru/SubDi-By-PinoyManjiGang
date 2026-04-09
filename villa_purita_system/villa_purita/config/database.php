@@ -1,4 +1,15 @@
 <?php
+// ── Email Configuration ──────────────
+putenv('MAIL_HOST=smtp.gmail.com');
+putenv('MAIL_PORT=587');
+putenv('MAIL_USERNAME=rnavigail@gmail.com');
+putenv('MAIL_PASSWORD=rtnd axkm xgfg mini');
+putenv('MAIL_ENCRYPTION=tls');
+putenv('MAIL_FROM_EMAIL=rnavigail@gmail.com');
+putenv('MAIL_FROM_NAME=Villa Purita HOA');
+putenv('APP_URL=http://localhost/SubDi');
+
+// ── DB Connection ──────────────────────
 class Database {
     private static ?self $instance = null;
     private PDO $pdo;

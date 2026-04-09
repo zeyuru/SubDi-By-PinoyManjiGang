@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Apr 05, 2026 at 03:56 PM
+-- Generation Time: Apr 09, 2026 at 06:51 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -208,8 +208,48 @@ CREATE TABLE `residents` (
 --
 
 INSERT INTO `residents` (`id`, `lot_id`, `first_name`, `last_name`, `block`, `lot_number`, `year_of_residency`, `occupancy_status`, `contact_number`, `contact_visibility`, `status`, `user_id`, `created_at`, `deleted_at`) VALUES
-(1, NULL, 'Jodee Dwayne', 'Somera', 'Block A', '25', '2025', 'Owner', '09123456789', 'admin_only', 'Active', NULL, '2026-03-09 23:33:25', NULL),
-(2, NULL, 'Nash', 'Nogger', 'Block A', '67', '2024', 'Owner', '123123123', 'admin_only', 'Active', NULL, '2026-03-12 23:22:57', NULL);
+(1, NULL, 'Jodee Dwayne', 'Somera', 'Block A', '25', '2025', 'Owner', '09123456789', 'admin_only', 'Active', NULL, '2026-03-09 23:33:25', '2026-04-05 22:17:20'),
+(2, NULL, 'Nash', 'Nogger', 'Block A', '67', '2024', 'Owner', '123123123', 'admin_only', 'Active', NULL, '2026-03-12 23:22:57', '2026-04-05 22:17:22'),
+(3, NULL, 'Nashu', 'Sanchez', 'Block A', '1', '2026', 'Owner', '09123123', 'admin_only', 'Active', 4, '2026-04-05 22:32:51', NULL),
+(4, NULL, 'Navigail', 'Ruiz', 'Block B', '01', '2025', 'Owner', '09123123123', 'admin_only', 'Active', NULL, '2026-04-05 23:00:09', NULL);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `shifts`
+--
+
+CREATE TABLE `shifts` (
+  `id` int(11) NOT NULL,
+  `user_id` int(10) UNSIGNED NOT NULL,
+  `start_time` datetime NOT NULL,
+  `end_time` datetime DEFAULT NULL,
+  `status` enum('Active','Ended') DEFAULT 'Active',
+  `created_at` datetime DEFAULT current_timestamp(),
+  `updated_at` datetime DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `shifts`
+--
+
+INSERT INTO `shifts` (`id`, `user_id`, `start_time`, `end_time`, `status`, `created_at`, `updated_at`) VALUES
+(1, 5, '2026-04-10 00:37:00', '2026-04-10 00:37:04', 'Ended', '2026-04-10 00:37:00', '2026-04-10 00:37:04'),
+(2, 5, '2026-04-10 00:37:07', '2026-04-10 00:37:09', 'Ended', '2026-04-10 00:37:07', '2026-04-10 00:37:09'),
+(3, 5, '2026-04-10 00:37:10', '2026-04-10 00:37:10', 'Ended', '2026-04-10 00:37:10', '2026-04-10 00:37:10'),
+(4, 5, '2026-04-10 00:37:11', '2026-04-10 00:37:13', 'Ended', '2026-04-10 00:37:11', '2026-04-10 00:37:13'),
+(5, 5, '2026-04-10 00:37:13', '2026-04-10 00:37:14', 'Ended', '2026-04-10 00:37:13', '2026-04-10 00:37:14'),
+(6, 5, '2026-04-10 00:37:16', '2026-04-10 00:37:17', 'Ended', '2026-04-10 00:37:16', '2026-04-10 00:37:17'),
+(7, 5, '2026-04-10 00:37:18', '2026-04-10 00:37:22', 'Ended', '2026-04-10 00:37:18', '2026-04-10 00:37:22'),
+(8, 5, '2026-04-10 00:37:23', '2026-04-10 00:37:31', 'Ended', '2026-04-10 00:37:23', '2026-04-10 00:37:31'),
+(9, 5, '2026-04-10 00:37:31', '2026-04-10 00:37:32', 'Ended', '2026-04-10 00:37:31', '2026-04-10 00:37:32'),
+(10, 5, '2026-04-10 00:38:15', '2026-04-10 00:38:22', 'Ended', '2026-04-10 00:38:15', '2026-04-10 00:38:22'),
+(11, 5, '2026-04-10 00:38:49', '2026-04-10 00:38:49', 'Ended', '2026-04-10 00:38:49', '2026-04-10 00:38:49'),
+(12, 5, '2026-04-10 00:38:52', '2026-04-10 00:38:52', 'Ended', '2026-04-10 00:38:52', '2026-04-10 00:38:52'),
+(13, 5, '2026-04-10 00:38:53', '2026-04-10 00:38:54', 'Ended', '2026-04-10 00:38:53', '2026-04-10 00:38:54'),
+(14, 5, '2026-04-10 00:38:54', '2026-04-10 00:38:55', 'Ended', '2026-04-10 00:38:54', '2026-04-10 00:38:55'),
+(15, 5, '2026-04-10 00:39:01', '2026-04-10 00:39:01', 'Ended', '2026-04-10 00:39:01', '2026-04-10 00:39:01'),
+(16, 5, '2026-04-10 00:42:09', NULL, 'Active', '2026-04-10 00:42:09', '2026-04-10 00:42:09');
 
 -- --------------------------------------------------------
 
@@ -222,6 +262,8 @@ CREATE TABLE `users` (
   `username` varchar(50) NOT NULL,
   `email` varchar(150) DEFAULT NULL,
   `password_hash` varchar(255) NOT NULL,
+  `password_reset_token` varchar(64) DEFAULT NULL,
+  `password_reset_expires` datetime DEFAULT NULL,
   `first_name` varchar(80) NOT NULL,
   `last_name` varchar(80) NOT NULL,
   `role` enum('Administrator','Guard','Homeowner') NOT NULL,
@@ -235,12 +277,15 @@ CREATE TABLE `users` (
 -- Dumping data for table `users`
 --
 
-INSERT INTO `users` (`id`, `username`, `password_hash`, `first_name`, `last_name`, `role`, `status`, `last_login`, `created_at`, `deleted_at`) VALUES
-(1, 'admin', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'HOA', 'Administrator', 'Administrator', 'Active', '2026-03-13 14:37:29', '2026-03-09 22:30:07', NULL),
-(2, 'guard_cruz', '$argon2id$...', 'Pedro', 'Cruz', 'Guard', 'Active', NULL, '2026-03-09 22:30:07', '2026-03-09 23:30:54'),
-(3, 'guard_delacruz', '$argon2id$...', 'Ramon', 'Dela Cruz', 'Guard', 'Active', NULL, '2026-03-09 22:30:07', '2026-03-09 23:30:56'),
-(4, 'nashu', '$2y$10$e7Fl9sQ1rsDGQDdbsiPgA.fOtLR4DQfsOv8k1oaK1MSxl0ZzN3zCO', 'Nashu', 'Sanchez', 'Homeowner', 'Active', '2026-03-13 14:39:12', '2026-03-09 23:29:08', NULL),
-(5, 'ekosh', '$2y$10$a2.JHoAReAE584qeSG9isu0bhuByBpBEF0K1PN9GSO9E.u92vi8xm', 'Jericho', 'Alcala', 'Guard', 'Active', '2026-03-13 14:03:52', '2026-03-09 23:30:48', NULL);
+INSERT INTO `users` (`id`, `username`, `email`, `password_hash`, `password_reset_token`, `password_reset_expires`, `first_name`, `last_name`, `role`, `status`, `last_login`, `created_at`, `deleted_at`) VALUES
+(1, 'admin', NULL, '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', NULL, NULL, 'HOA', 'Administrator', 'Administrator', 'Active', '2026-04-10 00:49:12', '2026-03-09 22:30:07', NULL),
+(2, 'guard_cruz', NULL, '$argon2id$...', NULL, NULL, 'Pedro', 'Cruz', 'Guard', 'Active', NULL, '2026-03-09 22:30:07', '2026-03-09 23:30:54'),
+(3, 'guard_delacruz', NULL, '$argon2id$...', NULL, NULL, 'Ramon', 'Dela Cruz', 'Guard', 'Active', NULL, '2026-03-09 22:30:07', '2026-03-09 23:30:56'),
+(4, 'nashu', NULL, '$2y$10$e7Fl9sQ1rsDGQDdbsiPgA.fOtLR4DQfsOv8k1oaK1MSxl0ZzN3zCO', NULL, NULL, 'Nashu', 'Sanchez', 'Homeowner', 'Active', '2026-04-10 00:48:41', '2026-03-09 23:29:08', NULL),
+(5, 'ekosh', NULL, '$2y$10$a2.JHoAReAE584qeSG9isu0bhuByBpBEF0K1PN9GSO9E.u92vi8xm', NULL, NULL, 'Jericho', 'Alcala', 'Guard', 'Active', '2026-04-10 00:48:17', '2026-03-09 23:30:48', NULL),
+(6, 'zeyuru', 'requirosoaaronr@gmail.com', '$2y$10$bY0TfcKXDnS1/XtdkKVa9.Ir3HNStXB5PBeUyiEWW3gCxcdYugx4C', NULL, NULL, 'Aaron', 'Ruiz', 'Homeowner', 'Active', '2026-04-05 22:39:42', '2026-04-05 22:33:17', '2026-04-05 22:44:49'),
+(26, 'violeta', 'rnavigail@gmail.com', '$2y$10$sCTpFSl0qTiva61EWeubU.TksZbULRa76GrvbWHZHQ2Kbmi76hvhG', NULL, NULL, 'Violeta', 'Ruiz', 'Homeowner', 'Active', '2026-04-10 00:14:41', '2026-04-09 14:29:09', NULL),
+(27, 'kc', 'aronzkiaron@gmail.com', '$2y$10$BtKB8Pl9ryPonmTJ9DgvreaNFWiXTSQPQJf5nuYFKyH3a1fML7EeG', NULL, NULL, 'Keycee', 'Bolambot', 'Homeowner', 'Active', '2026-04-09 14:53:31', '2026-04-09 14:38:11', NULL);
 
 -- --------------------------------------------------------
 
@@ -394,11 +439,19 @@ ALTER TABLE `residents`
   ADD KEY `idx_status` (`status`);
 
 --
+-- Indexes for table `shifts`
+--
+ALTER TABLE `shifts`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `fk_shifts_user_id` (`user_id`);
+
+--
 -- Indexes for table `users`
 --
 ALTER TABLE `users`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `username` (`username`),
+  ADD UNIQUE KEY `uq_users_email` (`email`),
   ADD KEY `idx_role` (`role`),
   ADD KEY `idx_status` (`status`);
 
@@ -457,13 +510,19 @@ ALTER TABLE `notifications`
 -- AUTO_INCREMENT for table `residents`
 --
 ALTER TABLE `residents`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+
+--
+-- AUTO_INCREMENT for table `shifts`
+--
+ALTER TABLE `shifts`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
 
 --
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=28;
 
 --
 -- AUTO_INCREMENT for table `visitors`
@@ -513,6 +572,12 @@ ALTER TABLE `notifications`
 ALTER TABLE `residents`
   ADD CONSTRAINT `residents_ibfk_1` FOREIGN KEY (`lot_id`) REFERENCES `lots` (`id`) ON DELETE SET NULL,
   ADD CONSTRAINT `residents_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL;
+
+--
+-- Constraints for table `shifts`
+--
+ALTER TABLE `shifts`
+  ADD CONSTRAINT `fk_shifts_user_id` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `visitors`

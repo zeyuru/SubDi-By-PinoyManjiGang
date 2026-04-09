@@ -16,6 +16,7 @@
 $root = dirname(__DIR__);
 require_once "$root/config/database.php";
 require_once "$root/config/session.php";
+require_once "$root/Mailer.php";
 require_once "$root/middleware/auth.php";
 require_once "$root/helpers/Response.php";
 require_once "$root/models/User.php";
@@ -24,6 +25,7 @@ require_once "$root/models/Visitor.php";
 require_once "$root/models/Dues.php";
 require_once "$root/models/Incident.php";
 require_once "$root/models/Announcement.php";
+require_once "$root/models/Shift.php";
 require_once "$root/controllers/Controllers.php";
 
 // ── CORS headers ─────────────────────────
@@ -59,6 +61,8 @@ try {
             => (new AuthController())->logout(),
         $method === 'GET'  && $uri === '/auth/me'
             => (new AuthController())->me(),
+        $method === 'POST' && $uri === '/auth/forgot-password'
+            => (new AuthController())->forgotPassword(),
 
         // ── Users ─────────────────────────────────────────────
         $method === 'GET'  && $uri === '/users'
@@ -119,6 +123,16 @@ try {
             => (new AnnouncementController())->store(),
         $method === 'POST' && $uri === '/announcements/archive'
             => (new AnnouncementController())->archive(),
+
+        // ── Shifts ────────────────────────────────────────────
+        $method === 'GET'  && $uri === '/shifts'
+            => (new ShiftController())->index(),
+        $method === 'POST' && $uri === '/shifts/start'
+            => (new ShiftController())->start(),
+        $method === 'POST' && $uri === '/shifts/end'
+            => (new ShiftController())->end(),
+        $method === 'GET'  && $uri === '/shifts/status'
+            => (new ShiftController())->status(),
 
         // ── 404 fallback ──────────────────────────────────────
         default => Response::error("Endpoint not found: $method $uri", 404),

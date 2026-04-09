@@ -35,6 +35,10 @@
       </div>
     </div>
     <button class="btn btn-primary" style="width:100%;padding:12px;font-size:14px;border-radius:10px;" onclick="doLogin()">Sign In →</button>
+    <div style="text-align:center;margin-top:12px;">
+      <span style="font-size:12px;color:var(--text3);">Forgot your password? </span>
+      <span style="font-size:12px;color:var(--accent);cursor:pointer;font-weight:500;" onclick="openModal('forgot-password-modal')">Reset via Email</span>
+    </div>
     <div class="login-footer">Secure access • Role-based control • Session managed</div>
   </div>
 </div>
@@ -51,14 +55,14 @@
     <div class="nav-label">Core</div>
     <div class="nav-item active" onclick="showPanel('dashboard',this)"><span class="icon">📊</span><span>Dashboard</span></div>
     <div class="nav-item" onclick="showPanel('map',this)"><span class="icon">🗺️</span><span>Live Map</span></div>
-    <div class="nav-item nav-admin nav-guard" onclick="showPanel('residents',this)"><span class="icon">👥</span><span>Residents</span></div>
+    <div class="nav-item nav-admin" onclick="showPanel('residents',this)"><span class="icon">👥</span><span>Residents</span></div>
     <div class="nav-item nav-admin" onclick="showPanel('blocklot',this)"><span class="icon">🏗️</span><span>Block & Lot</span></div>
   </div>
 
   <div class="nav-section">
     <div class="nav-label">Operations</div>
     <div class="nav-item nav-admin nav-guard" onclick="showPanel('visitors',this)"><span class="icon">🚗</span><span>Visitors</span><span class="nav-badge green">3</span></div>
-    <div class="nav-item nav-admin nav-guard nav-homeowner" onclick="showPanel('dues',this)"><span class="icon">💰</span><span>Dues & Payment</span><span class="nav-badge yellow">7</span></div>
+    <div class="nav-item nav-admin nav-homeowner" onclick="showPanel('dues',this)"><span class="icon">💰</span><span>Dues & Payment</span><span class="nav-badge yellow">7</span></div>
     <div class="nav-item nav-admin nav-guard nav-homeowner" onclick="showPanel('incidents',this)"><span class="icon">🚨</span><span>Incidents</span><span class="nav-badge">2</span></div>
     <div class="nav-item nav-homeowner" onclick="showPanel('announcements',this)"><span class="icon">📢</span><span>Announcements</span></div>
     <div class="nav-item nav-homeowner ho-action" onclick="openModal('ho-pay-modal')"><span class="icon">💳</span><span>Pay My Dues</span></div>
@@ -175,6 +179,13 @@
         <div class="stat-card purple"><div class="stat-icon">🚨</div><div class="stat-value">2</div><div class="stat-label">Open Incidents</div><div class="stat-change">1 high priority</div></div>
       </div>
 
+      <div class="card" style="margin-bottom: 20px;">
+        <div class="card-header"><div class="card-title">🛡️ Current Duty Status</div></div>
+        <div class="card-body" id="admin-duty-status">
+          <div style="color:var(--text3);font-size:12px;text-align:center;padding:20px;">Loading duty status…</div>
+        </div>
+      </div>
+
       <div class="grid-2-1">
         <div class="card">
           <div class="card-header">
@@ -212,7 +223,7 @@
       <div class="stats-grid">
         <div class="stat-card blue"><div class="stat-icon">🚗</div><div class="stat-value">24</div><div class="stat-label">Visitors Today</div><div class="stat-change">3 currently inside</div></div>
         <div class="stat-card red"><div class="stat-icon">🚨</div><div class="stat-value">2</div><div class="stat-label">Open Incidents</div><div class="stat-change">1 high priority</div></div>
-        <div class="stat-card yellow"><div class="stat-icon">⏰</div><div class="stat-value">08:45</div><div class="stat-label">Shift Start</div><div class="stat-change">On duty</div></div>
+        <div class="stat-card yellow" style="cursor:pointer;"><div class="stat-icon">⏰</div><div class="stat-value" id="guard-shift-start">08:45</div><div class="stat-label">Shift Start</div><div class="stat-change" id="guard-shift-status">On duty</div></div>
         <div class="stat-card green"><div class="stat-icon">✅</div><div class="stat-value">156</div><div class="stat-label">Entries Logged</div><div class="stat-change">Today</div></div>
       </div>
 
@@ -842,9 +853,15 @@
         <div class="form-group"><label class="form-label">Last Name *</label><input class="form-input" id="usr-lname" placeholder="Last"></div>
       </div>
       <div class="form-group"><label class="form-label">Username *</label><input class="form-input" id="usr-username" placeholder="e.g. juan_reyes"></div>
-      <div class="form-group"><label class="form-label">Email</label><input class="form-input" type="email" id="usr-email" placeholder="you@example.com"></div>
-      <div class="form-group"><label class="form-label">Role *</label><select class="form-input" id="usr-role"><option>Administrator</option><option>Guard</option><option>Homeowner</option></select></div>
-      <div class="form-note" style="font-size:12px;color:var(--text3);margin-top:-4px;">Password will be generated automatically as username + 4 random digits.</div>
+      <div class="form-group">
+        <label class="form-label">Email * <span style="font-weight:400;color:var(--text3);text-transform:none;letter-spacing:0;font-size:10px;">(password will be sent here)</span></label>
+        <input class="form-input" type="email" id="usr-email" placeholder="you@example.com">
+      </div>
+      <div class="form-group"><label class="form-label">Role *</label><select class="form-input" id="usr-role"><option>Administrator</option><option selected>Homeowner</option><option>Guard</option></select></div>
+      <div class="alert alert-blue" style="margin-top:4px;margin-bottom:10px;padding:10px 12px;">
+        <span class="alert-icon" style="font-size:14px;">📧</span>
+        <div style="font-size:11px;line-height:1.5;">A <strong>secure random password</strong> will be generated and emailed to the user. They should change it after first login via Account Settings.</div>
+      </div>
       <div class="form-group"><label class="form-label">Account Status</label><select class="form-input" id="usr-status"><option>Active</option><option>Inactive</option></select></div>
       <div id="usr-error" style="color:var(--red);font-size:12px;margin-top:4px;display:none;"></div>
     </div>
@@ -923,6 +940,41 @@
       <div id="ho-pay-error" style="color:var(--red);font-size:12px;margin-top:4px;display:none;"></div>
     </div>
     <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('ho-pay-modal')">Cancel</button><button class="btn btn-success" onclick="saveHomeownerPayment()">💳 Submit Payment</button></div>
+  </div>
+</div>
+
+<!-- Forgot Password Modal -->
+<div class="modal-overlay" id="forgot-password-modal">
+  <div class="modal" style="max-width:420px;">
+    <div class="modal-header">
+      <div class="modal-title">🔑 Reset Password</div>
+      <div class="modal-close" onclick="closeModal('forgot-password-modal')">✕</div>
+    </div>
+    <div class="modal-body">
+      <div id="forgot-success-view" style="display:none;text-align:center;padding:10px 0;">
+        <div style="font-size:48px;margin-bottom:16px;">📧</div>
+        <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:16px;margin-bottom:8px;">Check Your Email</div>
+        <div style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:20px;">
+          If that email is registered, we've sent a new temporary password. Check your inbox (and spam folder) and use it to sign in.
+        </div>
+        <div class="alert alert-yellow" style="text-align:left;">
+          <span class="alert-icon">⚠️</span>
+          <div style="font-size:12px;">Change your password immediately after logging in via <strong>Account Settings</strong>.</div>
+        </div>
+      </div>
+      <div id="forgot-form-view">
+        <p style="font-size:13px;color:var(--text2);margin-bottom:20px;line-height:1.6;">Enter your registered email address and we'll send a new temporary password to your inbox.</p>
+        <div class="form-group">
+          <label class="form-label">Email Address *</label>
+          <input class="form-input" type="email" id="forgot-email" placeholder="your@email.com" style="font-size:14px;padding:11px 14px;">
+        </div>
+        <div id="forgot-error" style="color:var(--red);font-size:12px;margin-top:4px;display:none;"></div>
+      </div>
+    </div>
+    <div class="modal-footer" id="forgot-footer">
+      <button class="btn btn-ghost" onclick="closeModal('forgot-password-modal');resetForgotForm()">Cancel</button>
+      <button class="btn btn-primary" id="forgot-submit-btn" onclick="doForgotPassword()">📧 Send New Password</button>
+    </div>
   </div>
 </div>
 

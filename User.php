@@ -24,15 +24,6 @@ class User {
         return $stmt->fetch() ?: null;
     }
 
-    public function findByEmail(string $email): ?array {
-        if (!$this->hasEmailColumn()) {
-            return null;
-        }
-        $stmt = $this->db->prepare("SELECT * FROM users WHERE email = ? AND deleted_at IS NULL");
-        $stmt->execute([$email]);
-        return $stmt->fetch() ?: null;
-    }
-
     public function findById(int $id): ?array {
         $emailField = $this->hasEmailColumn() ? ', email' : '';
         $stmt = $this->db->prepare(
@@ -113,11 +104,6 @@ class User {
                  ->execute([$id]);
     }
 
-    public function updatePassword(int $id, string $password): bool {
-        $stmt = $this->db->prepare("UPDATE users SET password_hash = ? WHERE id = ?");
-        return $stmt->execute([password_hash($password, PASSWORD_BCRYPT), $id]);
-    }
-
     public function usernameExists(string $username, int $excludeId = 0): bool {
         $stmt = $this->db->prepare(
             "SELECT COUNT(*) FROM users WHERE username = ? AND id != ? AND deleted_at IS NULL"
@@ -137,22 +123,58 @@ class User {
         return (bool)$stmt->fetchColumn();
     }
 
-    public function updateAccount(int $id, array $data): bool {
-        $fields = [];
-        $params = [];
-        if (array_key_exists('email', $data) && $this->hasEmailColumn()) {
-            $fields[] = 'email = :email';
-            $params[':email'] = $data['email'] ?: null;
-        }
-        if (!empty($data['password'])) {
-            $fields[] = 'password_hash = :password_hash';
-            $params[':password_hash'] = password_hash($data['password'], PASSWORD_BCRYPT);
-        }
-        if (empty($fields)) {
-            return false;
-        }
-        $params[':id'] = $id;
-        $stmt = $this->db->prepare('UPDATE users SET ' . implode(', ', $fields) . ' WHERE id = :id');
-        return $stmt->execute($params);
+    public function findByEmail(string $email): ?array {
+        if (!$this->hasEmailColumn()) return null;
+        $stmt = $this->db->prepare(
+            "SELECT * FROM users WHERE email = ? AND deleted_at IS NULL LIMIT 1"
+        );
+        $stmt->execute([$email]);
+        return $stmt->fetch() ?: null;
+    }
+
+    /**
+     * Store a hashed reset token with a 1-hour expiry.
+     * Returns the plain token to be emailed to the user.
+     */
+    public function storeResetToken(int $id): string {
+        $plain  = bin2hex(random_bytes(24)); // 48-char hex token
+        $hashed = hash('sha256', $plain);
+        $expires = date('Y-m-d H:i:s', strtotime('+1 hour'));
+        $this->db->prepare(
+            "UPDATE users SET password_reset_token = ?, password_reset_expires = ? WHERE id = ?"
+        )->execute([$hashed, $expires, $id]);
+        return $plain;
+    }
+
+    /**
+     * Find user by plain token (compares via sha256).
+     * Returns user row if token valid and not expired, null otherwise.
+     */
+    public function findByResetToken(string $plainToken): ?array {
+        $hashed = hash('sha256', $plainToken);
+        $stmt = $this->db->prepare(
+            "SELECT * FROM users
+             WHERE password_reset_token = ?
+               AND password_reset_expires > NOW()
+               AND deleted_at IS NULL
+             LIMIT 1"
+        );
+        $stmt->execute([$hashed]);
+        return $stmt->fetch() ?: null;
+    }
+
+    public function updatePassword(int $id, string $newPassword): void {
+        $this->db->prepare(
+            "UPDATE users SET password_hash = ?,
+                              password_reset_token = NULL,
+                              password_reset_expires = NULL
+             WHERE id = ?"
+        )->execute([password_hash($newPassword, PASSWORD_BCRYPT), $id]);
+    }
+
+    public function clearResetToken(int $id): void {
+        $this->db->prepare(
+            "UPDATE users SET password_reset_token = NULL, password_reset_expires = NULL WHERE id = ?"
+        )->execute([$id]);
     }
 }

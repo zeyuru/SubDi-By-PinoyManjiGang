@@ -16,7 +16,7 @@ let fullMapMarkers=[], guardMapMarkers=[];
 // ─── Local state (filled from API) ────────────────────────────────────────────
 let STATE = {
   residents:[], visitors:[], payments:[], incidents:[],
-  announcements:[], users:[], dashStats:{}
+  announcements:[], users:[], shifts:[], dashStats:{}, shift:{}
 };
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -94,6 +94,8 @@ function showLoginError(msg) {
 }
 
 async function completeLogin(user) {
+  closeModal('forgot-password-modal');
+  resetForgotForm();
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('sidebar-role').textContent = user.role;
   document.getElementById('sidebar-name').textContent = user.full_name || user.first_name + ' ' + user.last_name;
@@ -171,6 +173,7 @@ async function loadAllData() {
   ];
   if (role === 'Administrator') {
     tasks.push(api('/users').then(d => STATE.users = d || []).catch(()=>{}));
+    tasks.push(api('/shifts').then(d => STATE.shifts = d || []).catch(()=>{}));
   }
   await Promise.allSettled(tasks);
 }
@@ -178,14 +181,23 @@ async function loadAllData() {
 async function pollLiveData() {
   if (!SESSION.loggedIn) return;
   try {
-    const [vis, inc, ann] = await Promise.all([
+    const promises = [
       api('/visitors'),
       api('/incidents'),
       api('/announcements'),
-    ]);
-    STATE.visitors     = vis || STATE.visitors;
-    STATE.incidents    = inc || STATE.incidents;
-    STATE.announcements = ann || STATE.announcements;
+    ];
+    if (SESSION.role === 'Guard') {
+      promises.push(api('/shifts/status'));
+    }
+    if (SESSION.role === 'Administrator') {
+      promises.push(api('/shifts'));
+    }
+    const results = await Promise.all(promises);
+    STATE.visitors     = results[0] || STATE.visitors;
+    STATE.incidents    = results[1] || STATE.incidents;
+    STATE.announcements = results[2] || STATE.announcements;
+    if (SESSION.role === 'Guard' && results[3]) STATE.shift = results[3];
+    if (SESSION.role === 'Administrator' && results[3]) STATE.shifts = results[3];
     updateBadges();
     refreshDashboardStats();
     renderAllDashboards();
@@ -1244,20 +1256,107 @@ async function saveUser() {
   const role     = document.getElementById('usr-role')?.value;
   const status   = document.getElementById('usr-status')?.value;
   const errEl    = document.getElementById('usr-error');
-  if (!fname||!lname||!username) { errEl.textContent='First name, last name and username are required.'; errEl.style.display='block'; return; }
-  const generatedPassword = `${username}123`;
+  errEl.style.display = 'none';
+  if (!fname || !lname || !username) {
+    errEl.textContent = 'First name, last name and username are required.';
+    errEl.style.display = 'block'; return;
+  }
+  if (!email) {
+    errEl.textContent = 'Email is required — the login password will be sent there.';
+    errEl.style.display = 'block'; return;
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    errEl.textContent = 'Please enter a valid email address.';
+    errEl.style.display = 'block'; return;
+  }
   const btn = document.querySelector('#add-user-modal .btn-primary');
-  btn.textContent='Creating…'; btn.disabled=true;
+  btn.textContent = 'Creating…'; btn.disabled = true;
   try {
-    await api('/users', 'POST', { first_name:fname, last_name:lname, username, email: email || null, role, password:generatedPassword, status });
+    const result = await api('/users', 'POST', { first_name:fname, last_name:lname, username, email, role, status });
     closeModal('add-user-modal');
-    ['usr-fname','usr-lname','usr-username','usr-email'].forEach(id=>{if(document.getElementById(id))document.getElementById(id).value='';});
-    errEl.style.display='none';
+    ['usr-fname','usr-lname','usr-username','usr-email'].forEach(id => {
+      if (document.getElementById(id)) document.getElementById(id).value = '';
+    });
     STATE.users = await api('/users');
     renderUsers();
-    toast(`🔑 Account "${username}" created as ${role}. Password: ${generatedPassword}`);
-  } catch(e) { errEl.textContent=e.message; errEl.style.display='block'; }
-  btn.textContent='✓ Create Account'; btn.disabled=false;
+    const emailOk = result?.email_sent !== false;
+    if (emailOk) {
+      toast(`✅ Account "${username}" created! Credentials emailed to ${email}.`);
+    } else {
+      toast(`✅ Account "${username}" created. ⚠️ Email could not be sent — check SMTP config.`, 'warning');
+    }
+  } catch(e) { errEl.textContent = e.message; errEl.style.display = 'block'; }
+  btn.textContent = '✓ Create Account'; btn.disabled = false;
+}
+
+// ── Forgot Password ───────────────────────────────────────────────────────────
+async function doForgotPassword() {
+  const email = document.getElementById('forgot-email')?.value.trim();
+  const errEl = document.getElementById('forgot-error');
+  errEl.style.display = 'none';
+  if (!email) { errEl.textContent = 'Please enter your email address.'; errEl.style.display='block'; return; }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    errEl.textContent = 'Please enter a valid email address.'; errEl.style.display='block'; return;
+  }
+  const btn = document.getElementById('forgot-submit-btn');
+  btn.textContent = 'Sending…'; btn.disabled = true;
+  try {
+    await api('/auth/forgot-password', 'POST', { email });
+    // Show success view
+    document.getElementById('forgot-form-view').style.display  = 'none';
+    document.getElementById('forgot-success-view').style.display = '';
+    document.getElementById('forgot-footer').innerHTML =
+      `<button class="btn btn-primary" onclick="closeModal('forgot-password-modal');resetForgotForm()">Done</button>`;
+  } catch(e) {
+    errEl.textContent = e.message || 'Something went wrong. Please try again.';
+    errEl.style.display = 'block';
+    btn.textContent = '📧 Send New Password'; btn.disabled = false;
+  }
+}
+
+function resetForgotForm() {
+  const emailEl = document.getElementById('forgot-email');
+  const errEl   = document.getElementById('forgot-error');
+  const form    = document.getElementById('forgot-form-view');
+  const success = document.getElementById('forgot-success-view');
+  const footer  = document.getElementById('forgot-footer');
+  if (emailEl)  emailEl.value = '';
+  if (errEl)    errEl.style.display = 'none';
+  if (form)     form.style.display  = '';
+  if (success)  success.style.display = 'none';
+  if (footer)   footer.innerHTML = `
+    <button class="btn btn-ghost" onclick="closeModal('forgot-password-modal');resetForgotForm()">Cancel</button>
+    <button class="btn btn-primary" id="forgot-submit-btn" onclick="doForgotPassword()">📧 Send New Password</button>`;
+}
+
+async function toggleShift() {
+  console.log('toggleShift called, SESSION:', SESSION);
+  if (SESSION.role !== 'Guard') {
+    console.log('Not a guard, returning');
+    return;
+  }
+  try {
+    const active = STATE.shift && STATE.shift.status === 'Active';
+    console.log('Current shift state:', STATE.shift, 'active:', active);
+    if (active) {
+      console.log('Ending shift...');
+      await api('/shifts/end', 'POST');
+      toast('Shift ended successfully', 'success');
+    } else {
+      console.log('Starting shift...');
+      await api('/shifts/start', 'POST');
+      toast('Shift started successfully', 'success');
+    }
+    // Refresh shift status
+    console.log('Refreshing shift status...');
+    const shift = await api('/shifts/status');
+    console.log('New shift status:', shift);
+    STATE.shift = shift;
+    renderGuardDashboard();
+  } catch(e) {
+    console.error('Shift toggle error:', e);
+    toast(e.message || 'Failed to toggle shift', 'error');
+  }
 }
 
 async function toggleUserStatus(id, newStatus) {
@@ -1490,6 +1589,35 @@ function renderAdminDashboard() {
     alertsFeed.innerHTML = html;
   }
 
+  // Duty status feed - show current active shifts
+  const dutyFeed = document.getElementById('admin-duty-status');
+  if (dutyFeed && STATE.shifts) {
+    const activeShifts = STATE.shifts.filter(s => s.status === 'Active');
+    if (activeShifts.length > 0) {
+      let html = '';
+      activeShifts.forEach(shift => {
+        const startTime = new Date(shift.start_time);
+        const timeString = startTime.toLocaleString('en-US', {
+          month: 'short',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+        html += `<div class="alert alert-blue" style="margin-bottom:8px;">
+          <span class="alert-icon">🛡️</span>
+          <div>
+            <strong>${shift.first_name} ${shift.last_name}</strong><br>
+            <span style="font-size:11px;">On duty since ${timeString}</span><br>
+            <span style="font-size:10px;color:#93c5fd">Shift ID: ${shift.id}</span>
+          </div>
+        </div>`;
+      });
+      dutyFeed.innerHTML = html;
+    } else {
+      dutyFeed.innerHTML = '<div class="alert alert-yellow"><span class="alert-icon">⚠️</span><div><strong>No Active Shifts</strong><br><span style="font-size:11px;">No guards currently on duty.</span></div></div>';
+    }
+  }
+
   // Announcements feed
   const annFeed = document.getElementById('admin-ann-feed');
   if (annFeed) {
@@ -1541,6 +1669,32 @@ function renderGuardDashboard() {
   const gv = document.querySelectorAll('#panel-dashboard-guard .stat-value');
   if (gv[0]) gv[0].textContent = STATE.visitors.length;
   if (gv[1]) gv[1].textContent = STATE.incidents.filter(i=>i.status==='Open').length;
+  if (gv[3]) gv[3].textContent = STATE.visitors.length; // Entries logged = total visitors today
+
+  // Update shift start time
+  const shiftEl = document.getElementById('guard-shift-start');
+  const shiftStatusEl = document.getElementById('guard-shift-status');
+  if (shiftEl && shiftStatusEl) {
+    if (STATE.shift && STATE.shift.start_time) {
+      const startTime = new Date(STATE.shift.start_time);
+      shiftEl.textContent = startTime.toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit'});
+      shiftStatusEl.textContent = STATE.shift.status === 'Active' ? 'On duty' : 'Off duty';
+    } else {
+      shiftEl.textContent = '--:--';
+      shiftStatusEl.textContent = 'Off duty';
+    }
+  }
+
+  // Add click handler for shift card
+  const shiftCard = document.getElementById('guard-shift-start')?.closest('.stat-card');
+  if (shiftCard) {
+    shiftCard.onclick = function(event) {
+      // Only trigger if clicking on the shift card itself, not child elements
+      if (event.target.closest('.stat-card') === shiftCard) {
+        toggleShift();
+      }
+    };
+  }
 }
 
 // ── HOMEOWNER Dashboard ───────────────────────────────────────────────────

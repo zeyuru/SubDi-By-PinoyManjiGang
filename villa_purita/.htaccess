@@ -2,7 +2,7 @@ Options -Indexes
 RewriteEngine On
 
 # 1. Set the Base to your actual project folder
-RewriteBase /SubDi/villa_purita_system/villa_purita/
+RewriteBase /SubDi-By-PinoyManjiGang/villa_purita/
 
 # 2. If the file or folder actually exists (like images/css), just serve it
 RewriteCond %{REQUEST_FILENAME} -f [OR]

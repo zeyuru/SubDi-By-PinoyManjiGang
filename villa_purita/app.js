@@ -5,6 +5,8 @@
 
 const API = 'api'; // No leading slash!        // Change to your server path if needed
 const CENTER = [10.258089561887017, 123.8020430653793];
+// Exact Villa Purita marker location. Change these coordinates to move the Villa Purita label.
+const VILLA_PURITA_COORDS = [10.257339, 123.801205];
 
 // ─── Session ─────────────────────────────────────────────────────────────────
 let SESSION = { role:'', username:'', name:'', email:'', status:'', userId:0, loggedIn:false };
@@ -12,6 +14,7 @@ let SESSION = { role:'', username:'', name:'', email:'', status:'', userId:0, lo
 // ─── Map instances ────────────────────────────────────────────────────────────
 let dashMap=null, fullMap=null, guardMap=null;
 let fullMapMarkers=[], guardMapMarkers=[];
+let currentDirectionLine=null; // stores the direction polyline
 
 // ─── Local state (filled from API) ────────────────────────────────────────────
 let STATE = {
@@ -272,14 +275,24 @@ function resColor(r) {
   if (dues==='Overdue')       return '#ef4444';
   if (dues==='Partial')       return '#f59e0b';
   if (dues==='Paid')          return '#10b981';
-  return '#94a3b8';
+  return '#f59e0b'; // unpaid/occupied shown as orange
 }
 
 const BLOCK_OFFSETS = {
-  'Block A': [+0.0012, +0.002], 'Block B': [+0.0022, -0.001],
+  'Block A': [+0.0012, +0.002], 'Block B': [+0.0022, +0.0005],
   'Block C': [-0.0012, +0.003], 'Block D': [-0.0022, -0.002],
 };
+const RESIDENT_COORD_ADJUSTMENTS = {
+  'Block A|1': [0.00100, -0.00000],       // manually adjust Block A Lot 1 coordinates here
+  'Block B|1': [0.0022, -0.001],     // manually adjust Block B Lot 1 coordinates here
+  'Block C|1': [0.00080, -0.00018],  // manually adjust Block C Lot 1 coordinates here
+};
 function resCoords(r, i) {
+  const key = `${r.block}|${String(r.lot_number).trim()}`;
+  const custom = RESIDENT_COORD_ADJUSTMENTS[key];
+  if (custom) {
+    return [CENTER[0] + custom[0], CENTER[1] + custom[1]];
+  }
   const [dlat,dlng] = BLOCK_OFFSETS[r.block] || [0,0];
   return [CENTER[0]+dlat+(i%4)*0.00025, CENTER[1]+dlng+Math.floor(i/4)*0.00025];
 }
@@ -352,12 +365,38 @@ function initGuardMap() {
 }
 
 function addSubdivisionLabel(map) {
-  L.marker(CENTER, {icon:L.divIcon({className:'', iconAnchor:[60,12],
-    html:'<div style="background:rgba(59,130,246,.9);color:#fff;font-family:sans-serif;font-size:11px;font-weight:700;padding:4px 10px;border-radius:12px;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.4);">🏘️ Villa Purita</div>'
-  })}).addTo(map);
+  L.circleMarker(VILLA_PURITA_COORDS, {
+    radius: 10,
+    color: '#fff',
+    fillColor: '#fff',
+    fillOpacity: 0.95,
+    weight: 2,
+    interactive: false,
+    pane: 'markerPane'
+  }).addTo(map);
+
+  L.circleMarker(VILLA_PURITA_COORDS, {
+    radius: 5,
+    color: '#3b82f6',
+    fillColor: '#3b82f6',
+    fillOpacity: 1,
+    weight: 0,
+    interactive: false,
+    pane: 'markerPane'
+  }).addTo(map);
+
+  L.marker(VILLA_PURITA_COORDS, {
+    icon: L.divIcon({
+      className: '',
+      iconSize: [130, 32],
+      iconAnchor: [65, 42],
+      html: '<div style="background:rgba(59,130,246,.92);color:#fff;font-family:sans-serif;font-size:11px;font-weight:700;padding:6px 12px;border-radius:14px;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.4);">🏘️ Villa Purita</div>'
+    })
+  }).addTo(map);
 }
 
 function destroyMaps() {
+  clearDirectionLine();
   if (dashMap)  { dashMap.remove();  dashMap=null; }
   if (fullMap)  { fullMap.remove();  fullMap=null;  fullMapMarkers=[]; }
   if (guardMap) { guardMap.remove(); guardMap=null; guardMapMarkers=[]; }
@@ -413,12 +452,60 @@ function mapSearch(q) {
     </div>`).join('');
 }
 
+function clearDirectionLine() {
+  if (currentDirectionLine && fullMap) {
+    fullMap.removeLayer(currentDirectionLine);
+    currentDirectionLine = null;
+  }
+}
+
+function drawDirectionLine(toCoords) {
+  clearDirectionLine();
+  if (!fullMap || !toCoords) return;
+  
+  const from = VILLA_PURITA_COORDS;
+  const to = toCoords;
+  const url = `https://router.project-osrm.org/route/v1/driving/${from[1]},${from[0]};${to[1]},${to[0]}?overview=full&geometries=geojson`;
+  
+  fetch(url)
+    .then(res => res.json())
+    .then(data => {
+      if (data.routes && data.routes[0]) {
+        const coords = data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
+        currentDirectionLine = L.polyline(coords, {
+          color: '#3b82f6',
+          weight: 3,
+          opacity: 0.75,
+          dashArray: '5, 5',
+          lineCap: 'round'
+        }).addTo(fullMap);
+      }
+    })
+    .catch(() => {
+      currentDirectionLine = L.polyline([from, to], {
+        color: '#3b82f6',
+        weight: 2,
+        opacity: 0.7,
+        dashArray: '5, 5',
+        lineCap: 'round'
+      }).addTo(fullMap);
+    });
+}
+
 function locateOnMap(rid) {
   const e = fullMapMarkers.find(m=>m.r.id===rid);
   if (!e) return;
+  drawDirectionLine(e.coords);
   fullMap.setView(e.coords, 19, {animate:true});
   e.m.openPopup();
   showMapDetail(e.r, e.m, e.coords);
+}
+
+function locateOnMapByBlockLot(block, lot) {
+  const normalizedLot = String(lot || '').replace(/^Lot\s*/i, '').trim();
+  const match = STATE.residents.find(r => r.block === block && String(r.lot_number || '').replace(/^Lot\s*/i, '').trim() === normalizedLot);
+  if (!match) return;
+  locateOnMap(match.id);
 }
 
 // ══════════════════════════════════════════════════════════════════════════════

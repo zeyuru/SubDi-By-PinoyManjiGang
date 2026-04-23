@@ -1,0 +1,14 @@
+[2026-04-19 18:09:58] PHPMailer not installed. Falling back to native mail().
+[2026-04-19 18:12:08] PHPMailer not installed. Falling back to native mail().
+[2026-04-19 18:13:42] PHPMailer available via Composer. Host=smtp.gmail.com, Port=587, User=rnavigail@gmail.com
+[2026-04-19 18:13:42] Sending email to rnavigail@gmail.com via PHPMailer (host=smtp.gmail.com, port=587).
+[2026-04-19 18:13:47] PHPMailer send succeeded to rnavigail@gmail.com.
+[2026-04-19 18:14:08] PHPMailer available via Composer. Host=smtp.gmail.com, Port=587, User=rnavigail@gmail.com
+[2026-04-19 18:14:08] Sending email to aronzkiaron@gmail.com via PHPMailer (host=smtp.gmail.com, port=587).
+[2026-04-19 18:14:14] PHPMailer send succeeded to aronzkiaron@gmail.com.
+[2026-04-21 11:55:09] PHPMailer available via Composer. Host=smtp.gmail.com, Port=587, User=rnavigail@gmail.com
+[2026-04-21 11:55:09] Sending email to aronzkiaron@gmail.com via PHPMailer (host=smtp.gmail.com, port=587).
+[2026-04-21 11:55:14] PHPMailer send succeeded to aronzkiaron@gmail.com.
+[2026-04-23 08:42:10] PHPMailer available via Composer. Host=smtp.gmail.com, Port=587, User=rnavigail@gmail.com
+[2026-04-23 08:42:10] Sending email to batiisjimin@gmail.com via PHPMailer (host=smtp.gmail.com, port=587).
+[2026-04-23 08:42:15] PHPMailer send succeeded to batiisjimin@gmail.com.

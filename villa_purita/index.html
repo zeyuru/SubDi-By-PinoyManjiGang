@@ -1,0 +1,1293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Villa Purita Subdivision — Management System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<link rel="stylesheet" href="styles_old.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+</head>
+<body>
+
+<!-- LOGIN SCREEN -->
+<div id="login-screen">
+  <!-- Decorative background shapes -->
+  <div class="login-bg-deco">
+    <div class="deco-circle deco-c1"></div>
+    <div class="deco-circle deco-c2"></div>
+    <div class="deco-circle deco-c3"></div>
+    <div class="deco-blob deco-b1"></div>
+    <div class="deco-blob deco-b2"></div>
+    <div class="deco-dots"></div>
+  </div>
+
+  <div class="login-card">
+
+    <!-- LEFT: Image Panel -->
+    <div class="login-image-panel">
+      <img class="bg-img" src="villa-house.jpg" alt="Villa Purita">
+      <div class="img-overlay"></div>
+      <div class="login-brand">
+        <div class="login-brand-logo">
+          <div class="logo-dot"></div>
+          <span>Villa Purita</span>
+        </div>
+        <div class="login-brand-title">
+          Your Community,<br><span>Our Priority</span>
+        </div>
+        <div class="login-brand-tagline">
+          Secure, smart, and seamless management for Villa Purita Subdivision, Minglanilla, Cebu.
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Form Panel -->
+    <div class="login-form-panel">
+      <div class="login-welcome">Welcome Back</div>
+      <div class="login-title">Sign In</div>
+      <div class="login-sub">Access your subdivision portal</div>
+
+      <div class="form-group">
+        <label class="form-label">Username</label>
+        <input class="form-input" id="login-user" placeholder="Enter your username">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input class="form-input" type="password" id="login-pass" placeholder="••••••••••">
+      </div>
+
+      <div class="login-forgot">
+        <span onclick="openModal('forgot-password-modal')">Forgot your password?</span>
+      </div>
+
+      <div style="margin-bottom:18px;">
+        <label class="form-label" style="color:#334155;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;display:block;">Login As</label>
+        <div class="role-select-grid">
+          <div class="role-btn selected" onclick="selectRole('Administrator',this)"><span class="ri">👔</span>Admin</div>
+          <div class="role-btn" onclick="selectRole('Guard',this)"><span class="ri">🛡️</span>Guard</div>
+          <div class="role-btn" onclick="selectRole('Homeowner',this)"><span class="ri">🏠</span>Owner</div>
+        </div>
+      </div>
+
+      <button class="btn btn-primary" onclick="doLogin()">Sign In →</button>
+
+      <div class="login-footer">🔒 Secure access &nbsp;•&nbsp; Role-based control &nbsp;•&nbsp; Session managed</div>
+
+      <div class="login-landmarks"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- SIDEBAR -->
+<nav id="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-icon">🏘️</div>
+    <div class="logo-text">Villa Purita<span>Management</span></div>
+  </div>
+  <div class="role-badge"><div class="role-dot"></div><span id="sidebar-role">Administrator</span></div>
+
+  <div class="nav-section">
+    <div class="nav-label">Core</div>
+    <div class="nav-item active" onclick="showPanel('dashboard',this)"><span class="icon">📊</span><span>Dashboard</span></div>
+    <div class="nav-item" onclick="showPanel('map',this)"><span class="icon">🗺️</span><span>Live Map</span></div>
+    <div class="nav-item nav-admin nav-guard" onclick="showPanel('residents',this)"><span class="icon">👥</span><span>Residents</span></div>
+    <div class="nav-item nav-admin" onclick="showPanel('blocklot',this)"><span class="icon">🏗️</span><span>Block & Lot</span></div>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-label">Operations</div>
+    <div class="nav-item nav-admin nav-guard" onclick="showPanel('visitors',this)"><span class="icon">🚗</span><span>Visitors</span><span class="nav-badge green">3</span></div>
+    <div class="nav-item nav-admin nav-homeowner" onclick="showPanel('dues',this)"><span class="icon">💰</span><span>Dues & Payment</span><span class="nav-badge yellow">7</span></div>
+    <div class="nav-item nav-admin nav-guard nav-homeowner" onclick="showPanel('incidents',this)"><span class="icon">🚨</span><span>Incidents</span><span class="nav-badge">2</span></div>
+    <div class="nav-item nav-homeowner" onclick="showPanel('announcements',this)"><span class="icon">📢</span><span>Announcements</span></div>
+    <div class="nav-item nav-homeowner ho-action" onclick="openPayMyDuesModal()"><span class="icon">💳</span><span>Pay My Dues</span></div>
+    <div class="nav-item nav-homeowner ho-action" onclick="openIncidentModal()"><span class="icon">🆘</span><span>Report Incident</span></div>
+  </div>
+
+  <div class="nav-section nav-admin-section nav-guard-section">
+    <div class="nav-label">Access</div>
+    <div class="nav-item nav-admin" onclick="showPanel('users',this)"><span class="icon">🔑</span><span>User Management</span></div>
+    <div class="nav-item nav-admin" onclick="showPanel('reports',this)"><span class="icon">📋</span><span>Reports</span></div>
+    <div class="nav-item nav-guard" onclick="showPanel('guard',this)"><span class="icon">🛡️</span><span>Guard Console</span></div>
+  </div>
+
+  <div class="sidebar-footer">
+    <div class="user-card" onclick="doLogout()">
+      <div class="avatar">A</div>
+      <div class="user-info">
+        <div class="user-name" id="sidebar-name">Admin User</div>
+        <div class="user-role">Click to Logout</div>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- MAIN AREA -->
+<div id="main">
+  <div id="topbar">
+      <div class="search-box" onclick="document.getElementById('search-modal').classList.add('open')">🔍 <span>Quick search...</span></div>
+      <div class="notif-btn" onclick="showPanel('incidents',document.querySelector('[onclick*=incidents]'))">🔔<div class="notif-dot"></div></div>
+      <button class="btn btn-primary" id="new-record-btn" onclick="openModal('add-modal')">+ New Record</button>
+  </div> 
+
+  <div id="content">
+
+    <!-- ════ DASHBOARD ════ -->
+    <!-- Original dashboard panel - no longer used -->
+    <div class="panel" id="panel-dashboard" style="display:none">
+      <div class="stats-grid">
+        <div class="stat-card blue"><div class="stat-icon">🏠</div><div class="stat-value">248</div><div class="stat-label">Total Lots</div><div class="stat-change">↑ 3 new this year</div></div>
+        <div class="stat-card cyan"><div class="stat-icon">👨‍👩‍👧</div><div class="stat-value">192</div><div class="stat-label">Occupied Units</div><div class="stat-change">77.4% occupancy</div></div>
+        <div class="stat-card green"><div class="stat-icon">💳</div><div class="stat-value">₱84k</div><div class="stat-label">Dues Collected</div><div class="stat-change">↑ 12% vs last month</div></div>
+        <div class="stat-card red"><div class="stat-icon">⚠️</div><div class="stat-value">7</div><div class="stat-label">Overdue Accounts</div><div class="stat-change">Needs follow-up</div></div>
+        <div class="stat-card yellow"><div class="stat-icon">🚗</div><div class="stat-value">24</div><div class="stat-label">Visitors Today</div><div class="stat-change">3 currently inside</div></div>
+        <div class="stat-card purple"><div class="stat-icon">🚨</div><div class="stat-value">2</div><div class="stat-label">Open Incidents</div><div class="stat-change">1 high priority</div></div>
+      </div>
+
+      <div class="grid-2-1">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">🗺️ Villa Purita Subdivision Map Overview</div>
+            <button class="btn btn-ghost" onclick="showPanel('map',document.querySelector('[onclick*=\'map\']'))">Full Map</button>
+          </div>
+          <div style="height:280px;" id="dash-map"></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">🔴 Live Alerts</div></div>
+          <div class="card-body">
+            <div class="alert alert-red"><span class="alert-icon">🚨</span><div><strong>Incident #024</strong><br>Suspicious person — Block C Lot 12<br><span style="font-size:10px;color:#f87171">5 mins ago</span></div></div>
+            <div class="alert alert-yellow"><span class="alert-icon">⚠️</span><div><strong>Overdue Dues</strong><br>Block B Lot 7 — 3 months<br><span style="font-size:10px;color:#fbbf24">1 hr ago</span></div></div>
+            <div class="alert alert-blue"><span class="alert-icon">🔔</span><div><strong>Visitor Entry</strong><br>Delivery at Gate 1 — Block A Lot 3<br><span style="font-size:10px;color:#93c5fd">Just now</span></div></div>
+            <div class="alert alert-green"><span class="alert-icon">✅</span><div><strong>Payment Confirmed</strong><br>Block D Lot 22 — June dues paid<br><span style="font-size:10px;color:#6ee7b7">20 mins ago</span></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header"><div class="card-title">👥 Recent Residents</div><button class="btn btn-ghost" onclick="showPanel('residents',document.querySelector('[onclick*=residents]'))">View All</button></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Name</th><th>Block/Lot</th><th>Since</th><th>Status</th></tr></thead>
+              <tbody>
+                <tr><td class="td-name">Santos, Maria</td><td>B-A / L-03</td><td>2020</td><td><span class="badge badge-green"><span class="badge-dot"></span>Active</span></td></tr>
+                <tr><td class="td-name">Reyes, Juan</td><td>B-B / L-07</td><td>2018</td><td><span class="badge badge-green"><span class="badge-dot"></span>Active</span></td></tr>
+                <tr><td class="td-name">Cruz, Ana</td><td>B-C / L-12</td><td>2022</td><td><span class="badge badge-yellow"><span class="badge-dot"></span>Pending</span></td></tr>
+                <tr><td class="td-name">Dela Torre, Ben</td><td>B-D / L-01</td><td>2025</td><td><span class="badge badge-blue"><span class="badge-dot"></span>New</span></td></tr>
+                <tr><td class="td-name">Lim, Grace</td><td>B-A / L-11</td><td>2019</td><td><span class="badge badge-green"><span class="badge-dot"></span>Active</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">🚗 Today's Visitor Log</div><button class="btn btn-ghost" onclick="showPanel('visitors',document.querySelector('[onclick*=visitors]'))">View All</button></div>
+          <div class="card-body" style="padding:10px 16px;">
+            <div class="visitor-row"><div class="visitor-avatar">📦</div><div class="visitor-info"><div class="visitor-name">Lazada Delivery</div><div class="visitor-detail">Block A Lot 3 • ID: LZD-0934 • IN: 9:12am</div></div><span class="badge badge-green">Inside</span></div>
+            <div class="visitor-row"><div class="visitor-avatar">🧑</div><div class="visitor-info"><div class="visitor-name">Ramos, Carlo</div><div class="visitor-detail">Block B Lot 7 • Guest • IN: 8:45am OUT: 10:30am</div></div><span class="badge badge-blue">Left</span></div>
+            <div class="visitor-row"><div class="visitor-avatar">🔧</div><div class="visitor-info"><div class="visitor-name">Meralco Technician</div><div class="visitor-detail">Block C Lot 5 • Utility • IN: 10:00am</div></div><span class="badge badge-yellow">Inside</span></div>
+            <div class="visitor-row"><div class="visitor-avatar">🍕</div><div class="visitor-info"><div class="visitor-name">Jollibee Delivery</div><div class="visitor-detail">Block D Lot 22 • Food Del. • IN: 11:02am OUT: 11:08am</div></div><span class="badge badge-blue">Left</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:14px">
+        <div class="card-header"><div class="card-title">💰 Dues Collection Progress — June 2025</div></div>
+        <div class="card-body">
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;">
+            <div><div style="display:flex;justify-content:space-between;font-size:12px;"><span>Block A</span><span style="color:var(--green)">87%</span></div><div class="progress-bar"><div class="progress-fill" style="width:87%;background:var(--green)"></div></div></div>
+            <div><div style="display:flex;justify-content:space-between;font-size:12px;"><span>Block B</span><span style="color:var(--yellow)">62%</span></div><div class="progress-bar"><div class="progress-fill" style="width:62%;background:var(--yellow)"></div></div></div>
+            <div><div style="display:flex;justify-content:space-between;font-size:12px;"><span>Block C</span><span style="color:var(--accent)">74%</span></div><div class="progress-bar"><div class="progress-fill" style="width:74%;background:var(--accent)"></div></div></div>
+            <div><div style="display:flex;justify-content:space-between;font-size:12px;"><span>Block D</span><span style="color:var(--red)">41%</span></div><div class="progress-bar"><div class="progress-fill" style="width:41%;background:var(--red)"></div></div></div>
+          </div>
+        </div>
+      </div>
+    </div><!-- /dashboard -->
+
+    <!-- ════ ADMIN DASHBOARD ════ -->
+    <div class="panel" id="panel-dashboard-admin">
+      <div class="stats-grid">
+        <div class="stat-card blue"><div class="stat-icon">🏠</div><div class="stat-value">248</div><div class="stat-label">Total Lots</div><div class="stat-change">↑ 3 new this year</div></div>
+        <div class="stat-card cyan"><div class="stat-icon">👨‍👩‍👧</div><div class="stat-value">192</div><div class="stat-label">Occupied Units</div><div class="stat-change">77.4% occupancy</div></div>
+        <div class="stat-card green"><div class="stat-icon">💳</div><div class="stat-value">₱84k</div><div class="stat-label">Dues Collected</div><div class="stat-change">↑ 12% vs last month</div></div>
+        <div class="stat-card red"><div class="stat-icon">⚠️</div><div class="stat-value">7</div><div class="stat-label">Overdue Accounts</div><div class="stat-change">Needs follow-up</div></div>
+        <div class="stat-card yellow"><div class="stat-icon">🚗</div><div class="stat-value">24</div><div class="stat-label">Visitors Today</div><div class="stat-change">3 currently inside</div></div>
+        <div class="stat-card purple"><div class="stat-icon">🚨</div><div class="stat-value">2</div><div class="stat-label">Open Incidents</div><div class="stat-change">1 high priority</div></div>
+      </div>
+
+      <div class="card" style="margin-bottom: 20px;">
+        <div class="card-header"><div class="card-title">🛡️ Current Duty Status</div></div>
+        <div class="card-body" id="admin-duty-status">
+          <div style="color:var(--text3);font-size:12px;text-align:center;padding:20px;">Loading duty status…</div>
+        </div>
+      </div>
+
+      <div class="grid-2-1">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">🗺️ Villa Purita Subdivision Map Overview</div>
+            <button class="btn btn-ghost" onclick="showPanel('map',document.querySelector('[onclick*=\'map\']'))">Full Map</button>
+          </div>
+          <div style="height:280px;" id="admin-dash-map"></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">🔴 Live System Alerts</div></div>
+          <div class="card-body" id="admin-alerts-feed">
+            <div style="color:var(--text3);font-size:12px;text-align:center;padding:20px;">Loading…</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header"><div class="card-title">📢 Latest Announcements</div><button class="btn btn-ghost" onclick="showPanel('announcements',document.querySelector('[onclick*=announcements]'))">View All</button></div>
+          <div class="card-body" id="admin-ann-feed">
+            <div style="color:var(--text3);font-size:12px;text-align:center;padding:20px;">Loading…</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">🚗 Recent Visitor Log</div><button class="btn btn-ghost" onclick="showPanel('visitors',document.querySelector('[onclick*=visitors]'))">View All</button></div>
+          <div class="card-body" style="padding:10px 16px;" id="admin-visitors-feed">
+            <div style="color:var(--text3);font-size:12px;text-align:center;padding:20px;">Loading…</div>
+          </div>
+        </div>
+      </div>
+    </div><!-- /admin-dashboard -->
+
+    <!-- ════ GUARD DASHBOARD ════ -->
+    <div class="panel" id="panel-dashboard-guard">
+      <div class="stats-grid">
+        <div class="stat-card blue"><div class="stat-icon">🚗</div><div class="stat-value">24</div><div class="stat-label">Visitors Today</div><div class="stat-change">3 currently inside</div></div>
+        <div class="stat-card red"><div class="stat-icon">🚨</div><div class="stat-value">2</div><div class="stat-label">Open Incidents</div><div class="stat-change">1 high priority</div></div>
+        <div class="stat-card yellow" style="cursor:pointer;"><div class="stat-icon">⏰</div><div class="stat-value" id="guard-shift-start">08:45</div><div class="stat-label">Shift Start</div><div class="stat-change" id="guard-shift-status">On duty</div></div>
+        <div class="stat-card green"><div class="stat-icon">✅</div><div class="stat-value">156</div><div class="stat-label">Entries Logged</div><div class="stat-change">Today</div></div>
+      </div>
+
+      <div class="grid-2-1">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">🗺️ Guard Patrol Map</div>  
+          </div>
+          <div style="height:280px;" id="guard-dash-map"></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">🚨 Active Alerts</div></div>
+          <div class="card-body" id="guard-alerts-feed">
+            <div style="color:var(--text3);font-size:12px;text-align:center;padding:20px;">Loading…</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header"><div class="card-title">🚗 Current Visitors</div><button class="btn btn-ghost" onclick="showPanel('visitors',document.querySelector('[onclick*=visitors]'))">Visitor Log</button></div>
+          <div class="card-body" style="padding:10px 16px;" id="guard-visitors-feed">
+            <div style="color:var(--text3);font-size:12px;text-align:center;padding:20px;">Loading…</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">🚨 Recent Incidents</div><button class="btn btn-ghost" onclick="showPanel('incidents',document.querySelector('[onclick*=incidents]'))">View All</button></div>
+          <div class="card-body" style="padding:10px 16px;" id="guard-incidents-feed">
+            <div style="color:var(--text3);font-size:12px;text-align:center;padding:20px;">Loading…</div>
+          </div>
+        </div>
+      </div>
+    </div><!-- /guard-dashboard -->
+
+    <!-- ════ HOMEOWNER DASHBOARD ════ -->
+    <div class="panel" id="panel-dashboard-homeowner">
+      <div class="stats-grid">
+        <div class="stat-card blue"><div class="stat-icon">🏠</div><div class="stat-value" id="ho-stat-property">—</div><div class="stat-label">Your Property</div><div class="stat-change">Villa Purita</div></div>
+        <div class="stat-card green"><div class="stat-icon">💳</div><div class="stat-value" id="ho-stat-dues">—</div><div class="stat-label">Monthly Dues</div><div class="stat-change" id="ho-stat-dues-sub">Loading…</div></div>
+        <div class="stat-card yellow"><div class="stat-icon">🚗</div><div class="stat-value" id="ho-stat-visitors">—</div><div class="stat-label">Your Visitors</div><div class="stat-change" id="ho-stat-visitors-sub">Currently inside</div></div>
+        <div class="stat-card purple"><div class="stat-icon">📢</div><div class="stat-value" id="ho-stat-ann">—</div><div class="stat-label">Announcements</div><div class="stat-change">Active</div></div>
+      </div>
+
+      <!-- Quick Actions row -->
+      <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;">
+        <button id="ho-pay-dues-btn" class="btn btn-success" style="flex:1;padding:13px;font-size:13px;justify-content:center;border-radius:10px;" onclick="openPayMyDuesModal()">💳 Pay My Monthly Dues</button>
+        <button class="btn btn-danger" style="flex:1;padding:13px;font-size:13px;justify-content:center;border-radius:10px;" onclick="openIncidentModal()">🆘 Report an Incident</button>
+        <button class="btn btn-ghost" style="flex:1;padding:13px;font-size:13px;justify-content:center;border-radius:10px;" onclick="showPanel('announcements',document.querySelector('[onclick*=announcements]'))">📢 View Announcements</button>
+        <button class="btn btn-ghost" style="flex:1;padding:13px;font-size:13px;justify-content:center;border-radius:10px;" onclick="openHomeownerAccountModal()">👤 My Profile</button>
+      </div>
+
+      <div class="grid-2-1">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">🗺️ Your Neighborhood</div>
+            <button class="btn btn-ghost" onclick="showPanel('map',document.querySelector('[onclick*=\'map\']'))">Full Map</button>
+          </div>
+          <div style="height:280px;" id="homeowner-dash-map"></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">📢 Community Announcements</div></div>
+          <div class="card-body" id="ho-announcements-feed">
+            <div style="color:var(--text3);font-size:12px;text-align:center;padding:20px;">Loading…</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header"><div class="card-title">💰 Your Payment History</div><button class="btn btn-ghost" onclick="showPanel('dues',document.querySelector('[onclick*=dues]'))">View Details</button></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Month</th><th>Amount</th><th>Status</th><th>Date Paid</th></tr></thead>
+              <tbody id="ho-payments-tbody">
+                <tr><td colspan="4" style="text-align:center;padding:20px;color:var(--text3);">Loading…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">🚗 Your Recent Visitors</div><button class="btn btn-ghost" onclick="showPanel('visitors',document.querySelector('[onclick*=visitors]'))">View All</button></div>
+          <div class="card-body" style="padding:10px 16px;" id="ho-visitors-feed">
+            <div style="color:var(--text3);font-size:12px;text-align:center;padding:20px;">Loading…</div>
+          </div>
+        </div>
+      </div>
+    </div><!-- /homeowner-dashboard -->
+
+    <!-- ════ MAP PANEL ════ -->
+    <div class="panel" id="panel-map">
+      <div style="height:calc(100vh - 120px);">
+        <div class="card" style="height:100%;">
+          <div class="card-header"><div class="card-title">🗺️ Your Property & Neighborhood</div><span style="font-size:11px;color:var(--text3)">Powered by OpenStreetMap / Leaflet</span></div>
+          <div style="height:calc(100% - 50px);" id="full-map"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ RESIDENTS ════ -->
+    <div class="panel" id="panel-residents">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <div><div style="font-family:'Syne',sans-serif;font-weight:700;font-size:18px;">Resident Records</div><div id="resident-panel-summary" style="font-size:12px;color:var(--text2);">0 occupied units registered</div></div>
+        <div style="display:flex;gap:8px;" id="residents-panel-actions"><button class="btn btn-ghost admin-only-el">Export CSV</button><button class="btn btn-primary admin-only-el" onclick="openModal('add-resident-modal')">+ Add Resident</button></div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <input class="form-input" placeholder="🔍  Filter residents..." style="width:280px;padding:7px 12px;">
+          <div style="display:flex;gap:6px;">
+            <select class="form-input" style="width:130px;padding:7px 10px;"><option>All Blocks</option><option>Block A</option><option>Block B</option><option>Block C</option><option>Block D</option></select>
+            <select class="form-input" style="width:140px;padding:7px 10px;"><option>All Status</option><option>Active</option><option>Pending</option><option>Inactive</option></select>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>#</th><th>Resident Name</th><th>Block</th><th>Lot</th><th>Since</th><th>Contact</th><th>Status</th><th>Dues</th><th>Actions</th></tr></thead>
+            <tbody id="residents-tbody">
+              <tr><td>001</td><td class="td-name">Santos, Maria Luisa</td><td>Block A</td><td>Lot 03</td><td>2020</td><td>Admin only</td><td><span class="badge badge-green">Active</span></td><td><span class="badge badge-green">Paid</span></td><td><button class="btn btn-ghost" style="padding:4px 8px;font-size:11px;">View</button></td></tr>
+              <tr><td>002</td><td class="td-name">Reyes, Juan Carlo</td><td>Block B</td><td>Lot 07</td><td>2018</td><td>Admin only</td><td><span class="badge badge-green">Active</span></td><td><span class="badge badge-red">Overdue</span></td><td><button class="btn btn-ghost" style="padding:4px 8px;font-size:11px;">View</button></td></tr>
+              <tr><td>003</td><td class="td-name">Cruz, Ana Beatriz</td><td>Block C</td><td>Lot 12</td><td>2022</td><td>Admin only</td><td><span class="badge badge-yellow">Pending</span></td><td><span class="badge badge-yellow">Partial</span></td><td><button class="btn btn-ghost" style="padding:4px 8px;font-size:11px;">View</button></td></tr>
+              <tr><td>004</td><td class="td-name">Dela Torre, Benedicto</td><td>Block D</td><td>Lot 01</td><td>2025</td><td>Admin only</td><td><span class="badge badge-blue">New</span></td><td><span class="badge badge-blue">N/A</span></td><td><button class="btn btn-ghost" style="padding:4px 8px;font-size:11px;">View</button></td></tr>
+              <tr><td>005</td><td class="td-name">Lim, Grace Angeline</td><td>Block A</td><td>Lot 11</td><td>2019</td><td>Admin only</td><td><span class="badge badge-green">Active</span></td><td><span class="badge badge-green">Paid</span></td><td><button class="btn btn-ghost" style="padding:4px 8px;font-size:11px;">View</button></td></tr>
+              <tr><td>006</td><td class="td-name">Garcia, Roberto Jr.</td><td>Block B</td><td>Lot 15</td><td>2021</td><td>Admin only</td><td><span class="badge badge-green">Active</span></td><td><span class="badge badge-green">Paid</span></td><td><button class="btn btn-ghost" style="padding:4px 8px;font-size:11px;">View</button></td></tr>
+              <tr><td>007</td><td class="td-name">Mendoza, Patricia</td><td>Block C</td><td>Lot 08</td><td>2023</td><td>Admin only</td><td><span class="badge badge-green">Active</span></td><td><span class="badge badge-red">Overdue</span></td><td><button class="btn btn-ghost" style="padding:4px 8px;font-size:11px;">View</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div style="padding:12px 16px;display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--border);">
+          <span id="resident-panel-pagination" style="font-size:12px;color:var(--text2);">Showing 0 of 0 residents</span>
+          <div style="display:flex;gap:6px;"><button class="btn btn-ghost">← Prev</button><button class="btn btn-primary">Next →</button></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ BLOCK & LOT ════ -->
+    <div class="panel" id="panel-blocklot">
+      <div style="margin-bottom:16px;font-family:'Syne',sans-serif;font-weight:700;font-size:18px;">Block & Lot Management</div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header"><div class="card-title">🏗️ Block Overview</div></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Block</th><th>Total Residents</th></tr></thead>
+              <tbody id="blocklot-overview-tbody">
+                <tr><td colspan="2" style="color:var(--text3);text-align:center;padding:16px;">Loading block overview…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">📋 Lot Details — <span id="blocklot-details-title">All Active Blocks</span></div><select id="blocklot-block-filter" class="form-input" style="width:130px;padding:6px 10px;" onchange="renderBlockLot()"></select></div>
+          <div class="table-wrap" style="max-height:260px;overflow-y:auto;">
+            <table>
+              <thead><tr><th>Lot #</th><th>Area (sqm)</th><th>Resident</th><th>Status</th></tr></thead>
+              <tbody id="blocklot-lot-details-tbody">
+                <tr><td colspan="4" style="color:var(--text3);text-align:center;padding:16px;">Loading lot details…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ VISITORS ════ -->
+    <div class="panel" id="panel-visitors">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <div><div style="font-family:'Syne',sans-serif;font-weight:700;font-size:18px;">Visitor Entry & Monitoring</div><div style="font-size:12px;color:var(--text2);">3 visitors currently inside</div></div>
+        <button class="btn btn-primary" onclick="openModal('add-visitor-modal')">+ Log Visitor</button>
+      </div>
+      <div class="stats-grid" style="grid-template-columns:repeat(4,1fr);">
+        <div class="stat-card cyan"><div class="stat-icon">🚗</div><div class="stat-value">24</div><div class="stat-label">Total Today</div></div>
+        <div class="stat-card green"><div class="stat-icon">✅</div><div class="stat-value">21</div><div class="stat-label">Logged Out</div></div>
+        <div class="stat-card yellow"><div class="stat-icon">⏳</div><div class="stat-value">3</div><div class="stat-label">Still Inside</div></div>
+        <div class="stat-card blue"><div class="stat-icon">📦</div><div class="stat-value">11</div><div class="stat-label">Deliveries</div></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title">📋 Visitor Log</div><input class="form-input" placeholder="🔍 Search visitor..." style="width:220px;padding:7px 12px;"></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Log #</th><th>Visitor Name</th><th>Purpose</th><th>Visiting</th><th>ID Deposited</th><th>Time In</th><th>Time Out</th><th>Status</th><th>Guard</th></tr></thead>
+            <tbody>
+              <tr><td>V-001</td><td class="td-name">Lazada Courier</td><td>Delivery</td><td>Block A Lot 3</td><td>License</td><td>9:12 AM</td><td>—</td><td><span class="badge badge-green">Inside</span></td><td>Guard Cruz</td></tr>
+              <tr><td>V-002</td><td class="td-name">Ramos, Carlo</td><td>Guest Visit</td><td>Block B Lot 7</td><td>PhilSys ID</td><td>8:45 AM</td><td>10:30 AM</td><td><span class="badge badge-blue">Left</span></td><td>Guard Dela Cruz</td></tr>
+              <tr><td>V-003</td><td class="td-name">Meralco Technician</td><td>Utility Service</td><td>Block C Lot 5</td><td>Company ID</td><td>10:00 AM</td><td>—</td><td><span class="badge badge-yellow">Inside</span></td><td>Guard Cruz</td></tr>
+              <tr><td>V-004</td><td class="td-name">Jollibee Rider</td><td>Food Delivery</td><td>Block D Lot 22</td><td>License</td><td>11:02 AM</td><td>11:08 AM</td><td><span class="badge badge-blue">Left</span></td><td>Guard Dela Cruz</td></tr>
+              <tr><td>V-005</td><td class="td-name">Aquino, Lita</td><td>Family Visit</td><td>Block A Lot 11</td><td>PhilSys ID</td><td>7:30 AM</td><td>9:00 AM</td><td><span class="badge badge-blue">Left</span></td><td>Guard Malit</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ DUES ════ -->
+    <div class="panel" id="panel-dues">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <div><div style="font-family:'Syne',sans-serif;font-weight:700;font-size:18px;">Dues & Payment — Bayranan Module</div><div style="font-size:12px;color:var(--text2);" id="dues-cycle-label">Billing cycle</div></div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-ghost" onclick="dlDues()">Export CSV</button>
+          <!-- Admin only: Issue Bill + Record Payment -->
+          <button class="btn btn-ghost" id="issue-bill-btn" onclick="openIssueBillModal()" style="display:none;">📋 Issue Bill</button>
+          <button class="btn btn-primary" id="record-payment-btn" onclick="openModal('add-payment-modal')" style="display:none;">+ Record Payment</button>
+        </div>
+      </div>
+      <!-- Stats — admin/guard only -->
+      <div class="stats-grid" style="grid-template-columns:repeat(4,1fr);" id="dues-stats-row">
+        <div class="stat-card green"><div class="stat-icon">✅</div><div class="stat-value">—</div><div class="stat-label">Paid</div><div class="stat-change">collected</div></div>
+        <div class="stat-card red"><div class="stat-icon">❌</div><div class="stat-value">—</div><div class="stat-label">Overdue</div><div class="stat-change">pending</div></div>
+        <div class="stat-card yellow"><div class="stat-icon">⏳</div><div class="stat-value">—</div><div class="stat-label">Unpaid</div><div class="stat-change">Due this month</div></div>
+        <div class="stat-card blue"><div class="stat-icon">🔍</div><div class="stat-value" id="dues-stat-pending">—</div><div class="stat-label">For Review</div><div class="stat-change">Pending proofs</div></div>
+      </div>
+
+      <!-- HOMEOWNER: Pending bills issued by admin -->
+      <div class="card" id="ho-pending-bills" style="display:none;margin-bottom:14px;border:1px solid rgba(245,158,11,.4);">
+        <div class="card-header">
+          <div class="card-title">📋 Bills Issued to You</div>
+          <span id="ho-pending-count" style="font-size:11px;color:var(--text2);"></span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Month</th><th>Description</th><th>Amount</th><th>Issued By</th><th>Status</th><th>Action</th></tr></thead>
+            <tbody id="ho-bills-tbody"><tr><td colspan="6" style="text-align:center;padding:20px;color:var(--text3);">Loading…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ADMIN: Pending proof review card -->
+      <div class="card" id="dues-review-card" style="display:none;margin-bottom:14px;border:1px solid rgba(59,130,246,.4);">
+        <div class="card-header">
+          <div class="card-title">🔍 Pending Payment Reviews</div>
+          <span id="dues-review-count" style="font-size:11px;color:var(--text2);"></span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Ref #</th><th>Resident</th><th>Block/Lot</th><th>Month</th><th>Amount</th><th>Method</th><th>Proof</th><th>Action</th></tr></thead>
+            <tbody id="dues-review-tbody"><tr><td colspan="8" style="text-align:center;padding:20px;color:var(--text3);">No pending reviews.</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ADMIN/GUARD: All payment records -->
+      <div class="card" id="dues-all-card">
+        <div class="card-header">
+          <div class="card-title">💳 Payment Records</div>
+          <select class="form-input" id="dues-filter" style="width:140px;padding:7px 10px;" onchange="renderDues()">
+            <option value="">All Status</option><option>Paid</option><option>Unpaid</option><option>Overdue</option><option>Partial</option><option>Pending</option>
+          </select>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Ref #</th><th>Resident</th><th>Block/Lot</th><th>Month</th><th>Amount</th><th>Issued By</th><th>Date Paid</th><th>Method</th><th>Status</th><th>Action</th></tr></thead>
+            <tbody id="dues-tbody">
+              <tr><td colspan="10" style="text-align:center;padding:20px;color:var(--text3);">Loading…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ INCIDENTS ════ -->
+    <div class="panel" id="panel-incidents">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <div><div style="font-family:'Syne',sans-serif;font-weight:700;font-size:18px;">Security Alerts & Incidents</div><div style="font-size:12px;color:var(--text2);">2 active open incidents</div></div>
+      </div>
+      <div class="grid-2">
+        <div>
+          <div class="alert alert-red" style="margin-bottom:10px;"><span class="alert-icon">🚨</span><div style="flex:1;"><div style="display:flex;justify-content:space-between;"><strong>INC-024 — HIGH</strong><span class="badge badge-red">Open</span></div><div>Suspicious person loitering near Block C Lot 12</div><div style="font-size:11px;color:#f87171;margin-top:4px;">Reported by: Santos, Maria • 5 mins ago • Guard: Cruz</div></div></div>
+          <div class="alert alert-yellow" style="margin-bottom:10px;"><span class="alert-icon">⚠️</span><div style="flex:1;"><div style="display:flex;justify-content:space-between;"><strong>INC-023 — MED</strong><span class="badge badge-yellow">In Progress</span></div><div>Noise complaint — Block B Lot 7, late night</div><div style="font-size:11px;color:#fbbf24;margin-top:4px;">Reported by: Reyes, Juan • Yesterday 11pm</div></div></div>
+          <div class="alert alert-green" style="margin-bottom:10px;"><span class="alert-icon">✅</span><div style="flex:1;"><div style="display:flex;justify-content:space-between;"><strong>INC-022 — LOW</strong><span class="badge badge-blue">Resolved</span></div><div>Stray dog — Block A entrance cleared</div><div style="font-size:11px;color:#6ee7b7;margin-top:4px;">Resolved by: Guard Dela Cruz • Jun 4</div></div></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">📊 Incident History</div></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>ID</th><th>Type</th><th>Location</th><th>Priority</th><th>Status</th></tr></thead>
+              <tbody>
+                <tr><td>INC-024</td><td>Suspicious</td><td>C / 12</td><td><span class="badge badge-red">High</span></td><td><span class="badge badge-red">Open</span></td></tr>
+                <tr><td>INC-023</td><td>Noise</td><td>B / 07</td><td><span class="badge badge-yellow">Med</span></td><td><span class="badge badge-yellow">In Prog</span></td></tr>
+                <tr><td>INC-022</td><td>Animal</td><td>Gate 1</td><td><span class="badge badge-blue">Low</span></td><td><span class="badge badge-blue">Resolved</span></td></tr>
+                <tr><td>INC-021</td><td>Vandalism</td><td>D / 05</td><td><span class="badge badge-yellow">Med</span></td><td><span class="badge badge-blue">Resolved</span></td></tr>
+                <tr><td>INC-020</td><td>Theft</td><td>A / 09</td><td><span class="badge badge-red">High</span></td><td><span class="badge badge-blue">Resolved</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ ANNOUNCEMENTS ════ -->
+    <div class="panel" id="panel-announcements">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <div><div style="font-family:'Syne',sans-serif;font-weight:700;font-size:18px;">Announcements & Events</div></div>
+        <button class="btn btn-primary announcement-add-btn" id="announcement-add-btn" onclick="openModal('announcement-modal')">+ New Announcement</button>
+      </div>
+      <div class="grid-2">
+        <div>
+          <div class="card" style="margin-bottom:14px;">
+            <div class="card-header"><div class="card-title">📢 Active Announcements</div></div>
+            <div class="card-body">
+              <div style="border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:10px;">
+                <div style="display:flex;justify-content:space-between;margin-bottom:6px;"><strong style="font-size:13px;">Water Interruption Notice</strong><span class="badge badge-red">Urgent</span></div>
+                <div style="font-size:12px;color:var(--text2);margin-bottom:8px;">Scheduled water service interruption on June 10, 2025, 8AM–5PM. Please store water in advance.</div>
+                <div style="font-size:11px;color:var(--text3);">Posted by Admin • June 6, 2025 • Sent to all homeowners</div>
+              </div>
+              <div style="border:1px solid var(--border);border-radius:10px;padding:14px;">
+                <div style="display:flex;justify-content:space-between;margin-bottom:6px;"><strong style="font-size:13px;">Monthly Meeting — June 15</strong><span class="badge badge-blue">Event</span></div>
+                <div style="font-size:12px;color:var(--text2);margin-bottom:8px;">HOA Monthly Meeting at the Clubhouse, 7PM. Agenda includes road repair updates and security improvements.</div>
+                <div style="font-size:11px;color:var(--text3);">Posted by Admin • June 5, 2025 • 145 notified</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">📅 Event Calendar</div></div>
+          <div class="card-body">
+            <div class="timeline">
+              <div class="tl-item"><div class="tl-dot" style="background:var(--red)"></div><div class="tl-time">Jun 10</div><div class="tl-text"><strong>Water Interruption</strong> — All day</div></div>
+              <div class="tl-item"><div class="tl-dot" style="background:var(--accent)"></div><div class="tl-time">Jun 15</div><div class="tl-text"><strong>HOA Monthly Meeting</strong> — Clubhouse 7PM</div></div>
+              <div class="tl-item"><div class="tl-dot" style="background:var(--green)"></div><div class="tl-time">Jun 20</div><div class="tl-text"><strong>Community Clean-up Day</strong> — 7AM–12NN</div></div>
+              <div class="tl-item"><div class="tl-dot" style="background:var(--yellow)"></div><div class="tl-time">Jun 25</div><div class="tl-text"><strong>Dues Deadline</strong> — June billing</div></div>
+              <div class="tl-item"><div class="tl-dot" style="background:var(--purple)"></div><div class="tl-time">Jun 30</div><div class="tl-text"><strong>Mid-year Report</strong> — Admin review</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ USERS ════ -->
+    <div class="panel" id="panel-users">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <div><div style="font-family:'Syne',sans-serif;font-weight:700;font-size:18px;">User & Access Management</div></div>
+        <button class="btn btn-primary" onclick="openModal('add-user-modal')">+ Add User</button>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title">👤 System Users</div></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>ID</th><th>Username</th><th>Full Name</th><th>Role</th><th>Last Login</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody>
+              <tr><td>USR-001</td><td class="td-name">admin</td><td>HOA Administrator</td><td><span class="badge badge-purple">Administrator</span></td><td>Today 9:00 AM</td><td><span class="badge badge-green">Active</span></td><td><button class="btn btn-ghost" style="padding:4px 8px;font-size:11px;">Edit</button></td></tr>
+              <tr><td>USR-002</td><td class="td-name">guard_cruz</td><td>Cruz, Pedro</td><td><span class="badge badge-blue">Guard</span></td><td>Today 8:00 AM</td><td><span class="badge badge-green">Active</span></td><td><button class="btn btn-ghost" style="padding:4px 8px;font-size:11px;">Edit</button></td></tr>
+              <tr><td>USR-003</td><td class="td-name">guard_delacruz</td><td>Dela Cruz, Ramon</td><td><span class="badge badge-blue">Guard</span></td><td>Today 6:00 AM</td><td><span class="badge badge-green">Active</span></td><td><button class="btn btn-ghost" style="padding:4px 8px;font-size:11px;">Edit</button></td></tr>
+              <tr><td>USR-004</td><td class="td-name">santos_ma</td><td>Santos, Maria</td><td><span class="badge badge-green">Homeowner</span></td><td>Jun 5</td><td><span class="badge badge-green">Active</span></td><td><button class="btn btn-ghost" style="padding:4px 8px;font-size:11px;">Edit</button></td></tr>
+              <tr><td>USR-005</td><td class="td-name">reyes_jc</td><td>Reyes, Juan Carlo</td><td><span class="badge badge-green">Homeowner</span></td><td>Jun 3</td><td><span class="badge badge-yellow">Inactive</span></td><td><button class="btn btn-success btn-ghost" style="padding:4px 8px;font-size:11px;">Activate</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ REPORTS ════ -->
+    <div class="panel" id="panel-reports">
+      <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:18px;margin-bottom:16px;">Reports & Records</div>
+      <div class="grid-2">
+        <div class="card" style="cursor:pointer;" onclick="alert('Generating Resident List Report...')"><div class="card-body" style="display:flex;align-items:center;gap:16px;"><div style="width:50px;height:50px;background:rgba(59,130,246,.15);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;">👥</div><div><div style="font-weight:600;font-size:14px;">Resident List Report</div><div style="font-size:12px;color:var(--text2);">Complete list of all registered residents with block/lot details</div></div><div style="margin-left:auto;font-size:20px;color:var(--text3);">→</div></div></div>
+        <div class="card" style="cursor:pointer;" onclick="alert('Generating Visitor Logs Report...')"><div class="card-body" style="display:flex;align-items:center;gap:16px;"><div style="width:50px;height:50px;background:rgba(6,182,212,.15);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;">🚗</div><div><div style="font-weight:600;font-size:14px;">Visitor Logs Report</div><div style="font-size:12px;color:var(--text2);">Daily/monthly visitor entry and exit records</div></div><div style="margin-left:auto;font-size:20px;color:var(--text3);">→</div></div></div>
+        <div class="card" style="cursor:pointer;" onclick="alert('Generating Dues Collection Report...')"><div class="card-body" style="display:flex;align-items:center;gap:16px;"><div style="width:50px;height:50px;background:rgba(16,185,129,.15);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;">💰</div><div><div style="font-weight:600;font-size:14px;">Dues Collection Report</div><div style="font-size:12px;color:var(--text2);">Monthly collection summary, paid/unpaid/overdue breakdown</div></div><div style="margin-left:auto;font-size:20px;color:var(--text3);">→</div></div></div>
+        <div class="card" style="cursor:pointer;" onclick="alert('Generating Incident Summary Report...')"><div class="card-body" style="display:flex;align-items:center;gap:16px;"><div style="width:50px;height:50px;background:rgba(239,68,68,.15);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;">🚨</div><div><div style="font-weight:600;font-size:14px;">Incident Summary Report</div><div style="font-size:12px;color:var(--text2);">Security incidents, alerts, and resolution status</div></div><div style="margin-left:auto;font-size:20px;color:var(--text3);">→</div></div></div>
+        <div class="card" style="cursor:pointer;" onclick="alert('Generating Activity Monitor Report...')"><div class="card-body" style="display:flex;align-items:center;gap:16px;"><div style="width:50px;height:50px;background:rgba(139,92,246,.15);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;">📋</div><div><div style="font-weight:600;font-size:14px;">Activity Monitoring Log</div><div style="font-size:12px;color:var(--text2);">System access and action audit trail</div></div><div style="margin-left:auto;font-size:20px;color:var(--text3);">→</div></div></div>
+        <div class="card" style="cursor:pointer;" onclick="alert('Generating Block & Lot Report...')"><div class="card-body" style="display:flex;align-items:center;gap:16px;"><div style="width:50px;height:50px;background:rgba(245,158,11,.15);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;">🏗️</div><div><div style="font-weight:600;font-size:14px;">Block & Lot Status Report</div><div style="font-size:12px;color:var(--text2);">Occupancy rates, vacant lots, property details</div></div><div style="margin-left:auto;font-size:20px;color:var(--text3);">→</div></div></div>
+      </div>
+    </div>
+
+    <!-- ════ GUARD CONSOLE ════ -->
+    <div class="panel" id="panel-guard">
+      <div style="margin-bottom:16px;font-family:'Syne',sans-serif;font-weight:700;font-size:18px;">🛡️ Guard Operations Console</div>
+      <div class="grid-1-2" style="min-height:500px;">
+        <div style="display:flex;flex-direction:column;gap:14px;">
+          <div class="card">
+            <div class="card-header"><div class="card-title">🔍 Quick House Finder</div></div>
+            <div class="card-body">
+              <input class="form-input" placeholder="Name, Block, or Lot..." style="margin-bottom:10px;" oninput="guardSearch(this.value)" id="guard-search">
+              <div id="guard-results"></div>
+              <div style="font-size:11px;color:var(--text3);margin-top:8px;">💡 Helps guide riders, delivery, and guests to correct house</div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><div class="card-title">🚨 Log Visitor Now</div></div>
+            <div class="card-body">
+              <div class="form-group"><label class="form-label">Visitor Name</label><input class="form-input" placeholder="Full name"></div>
+              <div class="form-group"><label class="form-label">Visiting</label><input class="form-input" placeholder="Block & Lot or Resident name"></div>
+              <div class="form-row">
+                <div class="form-group"><label class="form-label">Purpose</label><select class="form-input"><option>Guest</option><option>Delivery</option><option>Utility</option><option>Other</option></select></div>
+                <div class="form-group"><label class="form-label">ID Deposited</label><input class="form-input" placeholder="ID type"></div>
+              </div>
+              <button class="btn btn-success" style="width:100%;">✓ Log Entry</button>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><div class="card-title">⚡ Quick Actions</div></div>
+            <div class="card-body" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+              <button class="btn btn-ghost" style="padding:10px;">📞 Call Admin</button>
+              <button class="btn btn-ghost" style="padding:10px;">🔒 Lock Gate</button>
+              <button class="btn btn-ghost" style="padding:10px;">📋 Shift Log</button>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">🗺️ Guard Navigation Map</div><span style="font-size:11px;color:var(--text3);">Villa Purita Subdivision - Click markers to navigate</span></div>
+          <div style="height:calc(100% - 50px);" id="guard-map"></div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<!-- ═══ MODALS ═══ -->
+<!-- Quick Add Modal -->
+<div class="modal-overlay" id="add-modal">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">+ New Record</div><div class="modal-close" onclick="closeModal('add-modal')">✕</div></div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:var(--text2);margin-bottom:16px;">Select the type of record to add:</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div class="role-btn" onclick="closeModal('add-modal');openModal('add-resident-modal')"><span class="ri">👥</span>New Resident</div>
+        <div class="role-btn" onclick="closeModal('add-modal');openModal('add-visitor-modal')"><span class="ri">🚗</span>Log Visitor</div>
+        <div class="role-btn" onclick="closeModal('add-modal');openModal('add-payment-modal')"><span class="ri">💰</span>Record Payment</div>
+        <div class="role-btn" onclick="closeModal('add-modal');openModal('announcement-modal')"><span class="ri">📢</span>Post Announcement</div>
+        <div class="role-btn" onclick="closeModal('add-modal');openModal('add-user-modal')"><span class="ri">🔑</span>Add User</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add Resident Modal -->
+<div class="modal-overlay" id="add-resident-modal">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">👥 Add New Resident</div><div class="modal-close" onclick="closeModal('add-resident-modal')">✕</div></div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">First Name *</label><input class="form-input" id="res-fname" placeholder="First name"></div>
+        <div class="form-group"><label class="form-label">Last Name *</label><input class="form-input" id="res-lname" placeholder="Last name"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Block *</label><input class="form-input" id="res-block" placeholder="e.g. Block 1"></div>
+        <div class="form-group"><label class="form-label">Lot Number *</label><input class="form-input" id="res-lot" placeholder="e.g. 03"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Year of Residency</label><input class="form-input" id="res-year" type="number" placeholder="2025"></div>
+        <div class="form-group"><label class="form-label">Occupancy Status</label><select class="form-input" id="res-occ"><option>Owner</option><option>Tenant</option><option>Co-owner</option></select></div>
+      </div>
+      <div class="form-group"><label class="form-label">Link Homeowner Account</label><select class="form-input" id="res-user"><option value="">— None —</option></select><div style="font-size:11px;color:var(--text3);margin-top:5px;">Select an existing homeowner user to connect this resident to their dashboard.</div></div>
+      <div class="form-group"><label class="form-label">Contact Number (Admin Only)</label><input class="form-input" id="res-contact" placeholder="+63..."></div>
+      <div id="res-error" style="color:var(--red);font-size:12px;margin-top:4px;display:none;"></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('add-resident-modal')">Cancel</button><button class="btn btn-primary" onclick="saveResident()">Save Resident</button></div>
+  </div>
+</div>
+
+<!-- Log Visitor Modal — with ID Scanner -->
+<div class="modal-overlay" id="add-visitor-modal">
+  <div class="modal" style="max-width:560px;">
+    <div class="modal-header">
+      <div class="modal-title">🚗 Log Visitor Entry</div>
+      <div class="modal-close" onclick="closeVisitorModal()">✕</div>
+    </div>
+    <div class="modal-body" style="padding-top:14px;">
+
+      <!-- ── ID SCANNER PANEL ── -->
+      <div id="id-scanner-panel">
+        <!-- Idle state: prompt to scan -->
+        <div id="scanner-idle">
+          <div style="text-align:center;padding:20px 0 10px;">
+            <div style="font-size:48px;margin-bottom:12px;">🪪</div>
+            <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:15px;margin-bottom:6px;">Scan Visitor ID</div>
+            <div style="font-size:12px;color:var(--text2);margin-bottom:20px;line-height:1.6;">Place the visitor's ID in front of the camera.<br>Supports PhilSys, Driver's License, Passport, SSS, UMID, and more.</div>
+            <div style="display:flex;gap:10px;justify-content:center;">
+              <button class="btn btn-primary" onclick="startIDScanner()" style="padding:10px 22px;font-size:13px;">
+                📷 Open Camera
+              </button>
+              <button class="btn btn-ghost" onclick="showManualForm()" style="padding:10px 18px;font-size:13px;">
+                ✏️ Enter Manually
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Camera preview state -->
+        <div id="scanner-camera" style="display:none;">
+          <div style="position:relative;background:#000;border-radius:10px;overflow:hidden;margin-bottom:12px;">
+            <video id="id-video" autoplay playsinline style="width:100%;max-height:240px;object-fit:cover;display:block;"></video>
+            <!-- Scanning overlay frame -->
+            <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;">
+              <div style="width:85%;height:75%;border:2px solid rgba(59,130,246,.8);border-radius:8px;box-shadow:0 0 0 9999px rgba(0,0,0,.45);">
+                <div class="scan-corner tl"></div>
+                <div class="scan-corner tr"></div>
+                <div class="scan-corner bl"></div>
+                <div class="scan-corner br"></div>
+                <div class="scan-line"></div>
+              </div>
+            </div>
+            <div style="position:absolute;bottom:10px;left:0;right:0;text-align:center;">
+              <span style="background:rgba(0,0,0,.6);color:#fff;font-size:11px;padding:4px 10px;border-radius:10px;">
+                Position the ID inside the frame
+              </span>
+            </div>
+          </div>
+          <canvas id="id-canvas" style="display:none;"></canvas>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-success" onclick="captureID()" style="flex:1;padding:11px;font-size:13px;justify-content:center;">
+              📸 Capture ID
+            </button>
+            <button class="btn btn-ghost" onclick="stopCamera()" style="padding:11px 16px;font-size:13px;">
+              Cancel
+            </button>
+          </div>
+        </div>
+
+        <!-- Processing / OCR state -->
+        <div id="scanner-processing" style="display:none;text-align:center;padding:30px 0;">
+          <div style="width:50px;height:50px;border:3px solid rgba(59,130,246,.2);border-top:3px solid var(--accent);border-radius:50%;margin:0 auto 16px;animation:spin 1s linear infinite;"></div>
+          <div style="font-weight:600;font-size:14px;margin-bottom:6px;">Reading ID…</div>
+          <div id="ocr-progress-text" style="font-size:12px;color:var(--text2);">Initializing OCR engine…</div>
+          <div style="background:var(--bg3);border-radius:6px;height:6px;margin:14px 0;overflow:hidden;">
+            <div id="ocr-progress-bar" style="height:100%;background:var(--accent);border-radius:6px;width:0%;transition:width .3s;"></div>
+          </div>
+        </div>
+
+        <!-- Preview captured image + result -->
+        <div id="scanner-result" style="display:none;">
+          <div style="display:flex;gap:12px;margin-bottom:14px;align-items:flex-start;">
+            <img id="id-preview-img" style="width:120px;height:75px;object-fit:cover;border-radius:8px;border:1px solid var(--border);flex-shrink:0;" src="" alt="ID">
+            <div id="ocr-result-badge" style="flex:1;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── VISITOR FORM (auto-filled or manual) ── -->
+      <div id="visitor-form-section" style="display:none;">
+        <div id="scan-success-banner" style="display:none;" class="alert alert-green" style="margin-bottom:12px;">
+          <span class="alert-icon">✅</span>
+          <div style="font-size:12px;"><strong>ID scanned successfully!</strong> Fields have been auto-filled. Please review and correct if needed.</div>
+        </div>
+        <div id="scan-partial-banner" style="display:none;" class="alert alert-yellow" style="margin-bottom:12px;">
+          <span class="alert-icon">⚠️</span>
+          <div style="font-size:12px;"><strong>Partial read.</strong> Some fields could not be read clearly. Please fill in the missing information.</div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Visitor Full Name *</label>
+          <input class="form-input" id="vis-name" placeholder="Full name of visitor">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">ID Type *</label>
+            <select class="form-input" id="vis-id-type">
+              <option value="">— Select ID Type —</option>
+              <option>PhilSys (National ID)</option>
+              <option>Driver's License</option>
+              <option>Philippine Passport</option>
+              <option>SSS ID</option>
+              <option>UMID</option>
+              <option>PRC ID</option>
+              <option>Voter's ID</option>
+              <option>Postal ID</option>
+              <option>Senior Citizen ID</option>
+              <option>Other Government ID</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">ID Number</label>
+            <input class="form-input" id="vis-id-num" placeholder="ID number">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Address (from ID)</label>
+          <input class="form-input" id="vis-address" placeholder="Address as shown on ID">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Visiting Block *</label>
+            <input class="form-input" id="vis-block" placeholder="e.g. Block 1">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Lot Number *</label>
+            <input class="form-input" id="vis-lot" placeholder="e.g. 03">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Homeowner Being Visited</label>
+          <select class="form-input" id="vis-homeowner">
+            <option value="">— Select homeowner (optional) —</option>
+          </select>
+          <div id="vis-homeowner-notif" style="font-size:11px;color:var(--accent2);margin-top:5px;display:none;">
+            💬 Homeowner will be notified of this visitor.
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Purpose of Visit</label>
+            <select class="form-input" id="vis-purpose">
+              <option>Guest Visit</option><option>Delivery</option><option>Utility/Repair</option><option>Business</option><option>Family</option><option>Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Vehicle Plate</label>
+            <input class="form-input" id="vis-plate" placeholder="e.g. ABC 1234">
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;margin-top:4px;">
+          <button class="btn btn-ghost" onclick="resetScanner()" style="font-size:12px;padding:7px 12px;">
+            🔄 Scan Again
+          </button>
+          <span style="font-size:11px;color:var(--text3);">or manually edit the fields above</span>
+        </div>
+        <div id="vis-error" style="color:var(--red);font-size:12px;margin-top:8px;display:none;"></div>
+      </div>
+
+    </div>
+    <div class="modal-footer" id="visitor-modal-footer">
+      <button class="btn btn-ghost" onclick="closeVisitorModal()">Cancel</button>
+      <button class="btn btn-success" id="log-entry-btn" onclick="saveVisitor()" style="display:none;">✓ Log Entry</button>
+    </div>
+  </div>
+</div>
+
+<!-- Issue Bill Modal (Admin only) -->
+<div class="modal-overlay" id="issue-bill-modal">
+  <div class="modal" style="max-width:500px;">
+    <div class="modal-header"><div class="modal-title">📋 Issue Due Bill</div><div class="modal-close" onclick="closeModal('issue-bill-modal')">✕</div></div>
+    <div class="modal-body">
+      <div class="alert alert-blue" style="margin-bottom:14px;"><span class="alert-icon">💡</span><div style="font-size:12px;">The homeowner will see this bill when they log in. They can pay via GCash, Maya, or at the office.</div></div>
+      <div class="form-group">
+        <label class="form-label">Issue To *</label>
+        <select class="form-input" id="issue-target" onchange="onIssueTargetChange()">
+          <option value="one">Specific Resident</option>
+          <option value="all">Everyone (All Active Residents)</option>
+        </select>
+      </div>
+      <div id="issue-resident-group" class="form-group">
+        <label class="form-label">Resident *</label>
+        <select class="form-input" id="issue-resident"></select>
+      </div>
+      <div id="issue-all-notice" style="display:none;background:var(--bg3);border:1px solid rgba(245,158,11,.4);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--text2);margin-bottom:10px;">
+        ⚠️ A bill will be issued to <strong>all active residents</strong>. Residents who already have a bill for the selected month will be <strong>skipped automatically</strong>.
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Billing Month *</label><input class="form-input" type="month" id="issue-month"></div>
+        <div class="form-group"><label class="form-label">Amount (₱) *</label><input class="form-input" type="number" id="issue-amount" placeholder="500.00" value="500"></div>
+      </div>
+      <div class="form-group"><label class="form-label">Description</label><input class="form-input" id="issue-desc" placeholder="e.g. Monthly association dues for June 2026"></div>
+      <div class="form-group"><label class="form-label">Notes (optional)</label><textarea class="form-input" id="issue-notes" rows="2" placeholder="Remarks visible to homeowner..."></textarea></div>
+      <div id="issue-error" style="color:var(--red);font-size:12px;margin-top:4px;display:none;"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('issue-bill-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveIssueBill()">📋 Issue Bill</button>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm Payment Modal (Admin confirms homeowner paid at office) -->
+<div class="modal-overlay" id="confirm-payment-modal">
+  <div class="modal" style="max-width:460px;">
+    <div class="modal-header"><div class="modal-title">✅ Confirm Payment Received</div><div class="modal-close" onclick="closeModal('confirm-payment-modal')">✕</div></div>
+    <div class="modal-body">
+      <div id="confirm-bill-info" style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:16px;font-size:13px;"></div>
+      <input type="hidden" id="confirm-due-id">
+      <input type="hidden" id="confirm-resident-id">
+      <input type="hidden" id="confirm-billing-month">
+      <input type="hidden" id="confirm-amount-val">
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Amount Received (₱) *</label><input class="form-input" type="number" id="confirm-amount" placeholder="500.00"></div>
+        <div class="form-group">
+          <label class="form-label">Payment Method</label>
+          <select class="form-input" id="confirm-method">
+            <option>Cash</option><option>GCash</option><option>Bank Transfer</option><option>Check</option><option>Other</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group"><label class="form-label">Reference / OR No. (optional)</label><input class="form-input" id="confirm-ref" placeholder="Official receipt or reference number"></div>
+      <div class="form-group"><label class="form-label">Notes (optional)</label><textarea class="form-input" id="confirm-notes" rows="2" placeholder="e.g. Paid in full, change given, etc."></textarea></div>
+      <div id="confirm-error" style="color:var(--red);font-size:12px;margin-top:4px;display:none;"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('confirm-payment-modal')">Cancel</button>
+      <button class="btn btn-success" onclick="confirmPayment()">✅ Confirm Payment</button>
+    </div>
+  </div>
+</div>
+
+<!-- Payment Modal -->
+<div class="modal-overlay" id="add-payment-modal">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">💰 Record Payment</div><div class="modal-close" onclick="closeModal('add-payment-modal')">✕</div></div>
+    <div class="modal-body">
+      <div class="form-group"><label class="form-label">Resident *</label><select class="form-input" id="pay-resident"></select></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Billing Month *</label><input class="form-input" type="month" id="pay-month" value="2025-06"></div>
+        <div class="form-group"><label class="form-label">Amount (₱) *</label><input class="form-input" id="pay-amount" placeholder="500.00" type="number" value="500"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Payment Method</label><select class="form-input" id="pay-method"><option>Cash</option><option>GCash</option><option>Bank Transfer</option><option>Check</option><option>Other</option></select></div>
+        <div class="form-group"><label class="form-label">Reference No.</label><input class="form-input" id="pay-ref" placeholder="Transaction ref"></div>
+      </div>
+      <div class="form-group"><label class="form-label">Notes</label><textarea class="form-input" id="pay-notes" rows="2" placeholder="Optional notes..."></textarea></div>
+      <div id="pay-error" style="color:var(--red);font-size:12px;margin-top:4px;display:none;"></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('add-payment-modal')">Cancel</button><button class="btn btn-primary" onclick="savePayment()">✓ Confirm Payment</button></div>
+  </div>
+</div>
+
+<!-- Incident Modal -->
+<div class="modal-overlay" id="incident-modal">
+  <div class="modal" style="max-width:560px;">
+    <div class="modal-header"><div class="modal-title">🚨 Report Incident / Alert</div><div class="modal-close" onclick="closeModal('incident-modal')">✕</div></div>
+    <div class="modal-body">
+      <div class="alert alert-red" style="margin-bottom:14px;"><span class="alert-icon">⚡</span><strong>This will immediately notify all guards on duty.</strong></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Incident Type *</label><select class="form-input" id="inc-type"><option>Suspicious Activity</option><option>Theft/Robbery</option><option>Fire</option><option>Medical Emergency</option><option>Vandalism</option><option>Noise Complaint</option><option>Unauthorized Entry</option><option>Other</option></select></div>
+        <div class="form-group"><label class="form-label">Priority</label><select class="form-input" id="inc-priority"><option value="High">High — Emergency</option><option value="Medium" selected>Medium</option><option value="Low">Low</option></select></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Location — Block</label><input class="form-input" id="inc-block" placeholder="e.g. Block A"></div>
+        <div class="form-group"><label class="form-label">Lot Number</label><input class="form-input" id="inc-lot" placeholder="e.g. 12 (optional)"></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label" style="display:flex;align-items:center;justify-content:space-between;">
+          <span>📍 Pin Exact Location on Map <span style="color:var(--red);">*</span></span>
+          <span id="inc-pin-status" style="font-size:11px;font-weight:400;color:var(--yellow);">⚠️ No pin set yet — click the map</span>
+        </label>
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:8px;margin-bottom:6px;">
+          <div style="font-size:11px;color:var(--text2);margin-bottom:6px;">🖱️ <strong>Click anywhere on the map</strong> to drop a pin at the incident location.</div>
+          <div id="inc-map" style="height:240px;border-radius:8px;overflow:hidden;border:2px solid var(--border);cursor:crosshair;"></div>
+          <div id="inc-coords-display" style="font-size:11px;color:var(--text3);margin-top:5px;text-align:center;">No pin set — click the map above</div>
+        </div>
+      </div>
+      <div class="form-group"><label class="form-label">Description *</label><textarea class="form-input" id="inc-desc" rows="3" placeholder="Describe the incident in detail..."></textarea></div>
+      <div id="inc-error" style="color:var(--red);font-size:12px;margin-top:4px;display:none;"></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('incident-modal')">Cancel</button><button class="btn btn-danger" onclick="saveIncident()">🚨 Send Alert</button></div>
+  </div>
+</div>
+
+<!-- Announcement Modal -->
+<div class="modal-overlay" id="announcement-modal">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">📢 Post Announcement</div><div class="modal-close" onclick="closeModal('announcement-modal')">✕</div></div>
+    <div class="modal-body">
+      <div class="form-group"><label class="form-label">Title *</label><input class="form-input" id="ann-title" placeholder="Announcement title"></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Category</label><select class="form-input" id="ann-category"><option>General</option><option>Urgent</option><option>Event</option><option>Maintenance</option><option>Payment Reminder</option></select></div>
+        <div class="form-group"><label class="form-label">Notify</label><select class="form-input" id="ann-notify"><option>All Homeowners</option><option>Block A Only</option><option>Block B Only</option><option>Block C Only</option><option>Block D Only</option><option>All Users</option></select></div>
+      </div>
+      <div class="form-group"><label class="form-label">Content *</label><textarea class="form-input" id="ann-content" rows="4" placeholder="Write announcement content..."></textarea></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Post Date</label><input class="form-input" type="date" id="ann-postdate"></div>
+        <div class="form-group"><label class="form-label">Expiry Date</label><input class="form-input" type="date" id="ann-expiry"></div>
+      </div>
+      <div id="ann-error" style="color:var(--red);font-size:12px;margin-top:4px;display:none;"></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('announcement-modal')">Cancel</button><button class="btn btn-primary" onclick="saveAnnouncement()">📢 Post & Notify</button></div>
+  </div>
+</div>
+
+<!-- Add User Modal -->
+<div class="modal-overlay" id="add-user-modal">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">🔑 Add System User</div><div class="modal-close" onclick="closeModal('add-user-modal')">✕</div></div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">First Name *</label><input class="form-input" id="usr-fname" placeholder="First"></div>
+        <div class="form-group"><label class="form-label">Last Name *</label><input class="form-input" id="usr-lname" placeholder="Last"></div>
+      </div>
+      <div class="form-group"><label class="form-label">Username *</label><input class="form-input" id="usr-username" placeholder="e.g. juan_reyes"></div>
+      <div class="form-group">
+        <label class="form-label">Email * <span style="font-weight:400;color:var(--text3);text-transform:none;letter-spacing:0;font-size:10px;">(password will be sent here)</span></label>
+        <input class="form-input" type="email" id="usr-email" placeholder="you@example.com">
+      </div>
+      <div class="form-group"><label class="form-label">Role *</label><select class="form-input" id="usr-role"><option>Administrator</option><option selected>Homeowner</option><option>Guard</option></select></div>
+      <div class="alert alert-blue" style="margin-top:4px;margin-bottom:10px;padding:10px 12px;">
+        <span class="alert-icon" style="font-size:14px;">📧</span>
+        <div style="font-size:11px;line-height:1.5;">A <strong>secure random password</strong> will be generated and emailed to the user. They should change it after first login via Account Settings.</div>
+      </div>
+      <div class="form-group"><label class="form-label">Account Status</label><select class="form-input" id="usr-status"><option>Active</option><option>Inactive</option></select></div>
+      <div id="usr-error" style="color:var(--red);font-size:12px;margin-top:4px;display:none;"></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('add-user-modal')">Cancel</button><button class="btn btn-primary" onclick="saveUser()">✓ Create Account</button></div>
+  </div>
+</div>
+
+<!-- Account Settings Modal -->
+<div class="modal-overlay" id="account-settings-modal">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">⚙️ Account Settings</div><div class="modal-close" onclick="closeModal('account-settings-modal')">✕</div></div>
+    <div class="modal-body">
+      <div class="form-group"><label class="form-label">Full Name</label><div class="form-input" id="acct-fullname" style="background:var(--bg2);border:none;color:var(--text);">Loading…</div></div>
+      <div class="form-group"><label class="form-label">Username</label><div class="form-input" id="acct-username" style="background:var(--bg2);border:none;color:var(--text);">Loading…</div></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Role</label><div class="form-input" id="acct-role" style="background:var(--bg2);border:none;color:var(--text);">Loading…</div></div>
+        <div class="form-group"><label class="form-label">Status</label><div class="form-input" id="acct-status" style="background:var(--bg2);border:none;color:var(--text);">Loading…</div></div>
+      </div>
+      <div class="form-group"><label class="form-label">Linked Property</label><div class="form-input" id="acct-property" style="background:var(--bg2);border:none;color:var(--text);">Loading…</div></div>
+      <div class="form-group"><label class="form-label">Email</label><input class="form-input" type="email" id="acct-email" placeholder="you@example.com"></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">New Password</label><input class="form-input" type="password" id="acct-pass" placeholder="Leave blank to keep current"></div>
+        <div class="form-group"><label class="form-label">Confirm Password</label><input class="form-input" type="password" id="acct-pass2" placeholder="Confirm new password"></div>
+      </div>
+      <div id="acct-error" style="color:var(--red);font-size:12px;margin-top:4px;display:none;"></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('account-settings-modal')">Cancel</button><button class="btn btn-primary" onclick="saveAccountSettings()">Save Changes</button></div>
+  </div>
+</div>
+
+<!-- View Resident Modal -->
+<div class="modal-overlay" id="view-resident-modal">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">👤 Resident Details</div><div class="modal-close" onclick="closeModal('view-resident-modal')">✕</div></div>
+    <div class="modal-body" id="view-resident-body"></div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('view-resident-modal')">Close</button></div>
+  </div>
+</div>
+
+<!-- Search Modal -->
+<div class="modal-overlay" id="search-modal" onclick="if(event.target===this)closeModal('search-modal')">
+  <div class="modal" style="width:600px;">
+    <div class="modal-header"><div class="modal-title">🔍 Quick Search</div><div class="modal-close" onclick="closeModal('search-modal')">✕</div></div>
+    <div class="modal-body">
+      <input class="form-input" placeholder="Search residents, visitors, incidents..." style="font-size:14px;padding:11px;" oninput="globalSearch(this.value)" id="global-search-input">
+      <div id="global-search-results" style="margin-top:12px;max-height:380px;overflow-y:auto;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Homeowner Pay Dues Modal -->
+<!-- Pay Dues Modal — GCash / Maya / Office -->
+<div class="modal-overlay" id="ho-pay-modal">
+  <div class="modal" style="max-width:500px;">
+    <div class="modal-header">
+      <div class="modal-title">💳 Pay My Dues</div>
+      <div class="modal-close" onclick="closeModal('ho-pay-modal')">✕</div>
+    </div>
+    <div class="modal-body" style="padding:0;">
+      <!-- Bill selector -->
+      <div id="ho-pay-bill-selector" style="padding:16px 20px 0;">
+        <label class="form-label">Select Bill to Pay *</label>
+        <select class="form-input" id="ho-pay-due-id" onchange="onHoPayBillChange()">
+          <option value="">— Select a bill —</option>
+        </select>
+        <div id="ho-pay-bill-info" style="display:none;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-top:8px;font-size:12px;"></div>
+        <div id="ho-pay-rejected-notice" style="display:none;background:#fee2e2;border:1px solid #fca5a5;border-radius:8px;padding:10px 14px;margin-top:8px;font-size:12px;color:#b91c1c;"></div>
+      </div>
+      <!-- Payment method tabs -->
+      <div style="display:flex;gap:0;border-bottom:1px solid var(--border);margin-top:16px;">
+        <button id="ho-tab-gcash"  class="ho-pay-tab ho-tab-active" onclick="switchPayTab('gcash')"  style="flex:1;padding:10px 0;font-size:12px;font-weight:600;border:none;border-bottom:2px solid var(--accent);background:transparent;color:var(--accent);cursor:pointer;">📱 GCash</button>
+        <button id="ho-tab-maya"   class="ho-pay-tab" onclick="switchPayTab('maya')"   style="flex:1;padding:10px 0;font-size:12px;font-weight:600;border:none;border-bottom:2px solid transparent;background:transparent;color:var(--text2);cursor:pointer;">🟢 Maya</button>
+        <button id="ho-tab-office" class="ho-pay-tab" onclick="switchPayTab('office')" style="flex:1;padding:10px 0;font-size:12px;font-weight:600;border:none;border-bottom:2px solid transparent;background:transparent;color:var(--text2);cursor:pointer;">🏦 Pay at Office</button>
+      </div>
+
+      <!-- GCash Tab -->
+      <div id="ho-pane-gcash" class="ho-pay-pane" style="padding:16px 20px;">
+        <div style="text-align:center;margin-bottom:14px;">
+          <div style="font-size:11px;color:var(--text3);margin-bottom:8px;">Scan to pay via GCash</div>
+          <img src="gcash_qr.jpg" id="gcash-qr-img" alt="GCash QR Code"
+               style="width:200px;height:200px;object-fit:contain;border:1px solid var(--border);border-radius:10px;cursor:zoom-in;"
+               onclick="openQrZoom('gcash_qr.jpg','GCash QR Code')">
+          <div style="font-size:11px;color:var(--text2);margin-top:8px;">V. Purita · 0945 521 ****<br><span style="color:var(--text3);">Transfer fees may apply</span></div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Reference Number *</label>
+          <input class="form-input" id="ho-gcash-ref" placeholder="GCash transaction reference number">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Proof of Transaction (JPG/PNG) *</label>
+          <input type="file" class="form-input" id="ho-gcash-proof" accept="image/jpeg,image/png" style="padding:6px;">
+          <div id="ho-gcash-preview" style="display:none;margin-top:8px;text-align:center;">
+            <img id="ho-gcash-preview-img" style="max-width:100%;max-height:160px;border-radius:8px;border:1px solid var(--border);">
+          </div>
+        </div>
+        <div id="ho-gcash-error" style="color:var(--red);font-size:12px;display:none;margin-top:4px;"></div>
+      </div>
+
+      <!-- Maya Tab -->
+      <div id="ho-pane-maya" class="ho-pay-pane" style="padding:16px 20px;display:none;">
+        <div style="text-align:center;margin-bottom:14px;">
+          <div style="font-size:11px;color:var(--text3);margin-bottom:8px;">Scan to pay via Maya</div>
+          <img src="maya_qr.jpg" id="maya-qr-img" alt="Maya QR Code"
+               style="width:200px;height:200px;object-fit:contain;border:1px solid var(--border);border-radius:10px;cursor:zoom-in;"
+               onclick="openQrZoom('maya_qr.jpg','Maya QR Code')">
+          <div style="font-size:11px;color:var(--text2);margin-top:8px;">Aaron Requireso · +63 *** *** 4472<br><span style="color:var(--text3);">Transfer fees may apply</span></div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Reference Number *</label>
+          <input class="form-input" id="ho-maya-ref" placeholder="Maya transaction reference number">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Proof of Transaction (JPG/PNG) *</label>
+          <input type="file" class="form-input" id="ho-maya-proof" accept="image/jpeg,image/png" style="padding:6px;">
+          <div id="ho-maya-preview" style="display:none;margin-top:8px;text-align:center;">
+            <img id="ho-maya-preview-img" style="max-width:100%;max-height:160px;border-radius:8px;border:1px solid var(--border);">
+          </div>
+        </div>
+        <div id="ho-maya-error" style="color:var(--red);font-size:12px;display:none;margin-top:4px;"></div>
+      </div>
+
+      <!-- Office Tab -->
+      <div id="ho-pane-office" class="ho-pay-pane" style="padding:16px 20px;display:none;text-align:center;">
+        <div style="font-size:40px;margin-bottom:12px;">🏦</div>
+        <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:15px;margin-bottom:8px;">Payment at the HOA Office</div>
+        <div style="font-size:13px;color:var(--text2);margin-bottom:16px;line-height:1.7;">
+          Please visit the Villa Purita HOA office to settle your dues.<br>
+          We accept <strong>Cash</strong>, <strong>Check</strong>, and <strong>Bank Transfer</strong>.<br><br>
+        
+        </div>
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:14px;font-size:12px;color:var(--text3);">
+          📋 Your balance will be updated by the administrator after your payment is confirmed at the office.
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('ho-pay-modal')">Close</button>
+      <button class="btn btn-primary" id="ho-pay-submit-btn" onclick="submitHoPayment()" style="display:none;">📤 Submit Payment</button>
+    </div>
+  </div>
+</div>
+
+<!-- QR Zoom Modal -->
+<div class="modal-overlay" id="qr-zoom-modal" onclick="closeModal('qr-zoom-modal')" style="background:rgba(0,0,0,.85);z-index:10002;">
+  <div style="text-align:center;padding:20px;">
+    <div style="color:#fff;font-size:13px;margin-bottom:12px;" id="qr-zoom-title"></div>
+    <img id="qr-zoom-img" style="max-width:90vw;max-height:80vh;border-radius:12px;">
+    <div style="color:#aaa;font-size:11px;margin-top:12px;">Tap anywhere to close</div>
+  </div>
+</div>
+
+<!-- Reject Payment Modal -->
+<div class="modal-overlay" id="reject-payment-modal">
+  <div class="modal" style="max-width:420px;">
+    <div class="modal-header"><div class="modal-title">❌ Reject Payment</div><div class="modal-close" onclick="closeModal('reject-payment-modal')">✕</div></div>
+    <div class="modal-body">
+      <input type="hidden" id="reject-due-id">
+      <div id="reject-bill-info" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px;font-size:13px;margin-bottom:14px;"></div>
+      <div class="form-group">
+        <label class="form-label">Reason for Rejection *</label>
+        <textarea class="form-input" id="reject-reason" rows="3" placeholder="e.g. Proof is unclear, wrong amount, invalid reference..."></textarea>
+      </div>
+      <div id="reject-error" style="color:var(--red);font-size:12px;display:none;margin-top:4px;"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('reject-payment-modal')">Cancel</button>
+      <button class="btn btn-danger" onclick="submitRejectPayment()">❌ Reject Payment</button>
+    </div>
+  </div>
+</div>
+
+<!-- View Proof Modal -->
+<div class="modal-overlay" id="view-proof-modal">
+  <div class="modal" style="max-width:480px;">
+    <div class="modal-header"><div class="modal-title">🖼️ Proof of Transaction</div><div class="modal-close" onclick="closeModal('view-proof-modal')">✕</div></div>
+    <div class="modal-body" style="text-align:center;">
+      <div id="view-proof-info" style="font-size:13px;margin-bottom:12px;"></div>
+      <img id="view-proof-img" style="max-width:100%;max-height:400px;border-radius:10px;border:1px solid var(--border);cursor:zoom-in;" onclick="openQrZoom(this.src,'Proof of Transaction')">
+      <div style="font-size:11px;color:var(--text3);margin-top:8px;">Click image to enlarge</div>
+    </div>
+    <div class="modal-footer" id="view-proof-actions"></div>
+  </div>
+</div>
+
+<!-- Forgot Password Modal -->
+<div class="modal-overlay" id="forgot-password-modal">
+  <div class="modal" style="max-width:420px;">
+    <div class="modal-header">
+      <div class="modal-title">🔑 Reset Password</div>
+      <div class="modal-close" onclick="closeModal('forgot-password-modal')">✕</div>
+    </div>
+    <div class="modal-body">
+      <div id="forgot-success-view" style="display:none;text-align:center;padding:10px 0;">
+        <div style="font-size:48px;margin-bottom:16px;">📧</div>
+        <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:16px;margin-bottom:8px;">Check Your Email</div>
+        <div style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:20px;">
+          If that email is registered, we've sent a new temporary password. Check your inbox (and spam folder) and use it to sign in.
+        </div>
+        <div class="alert alert-yellow" style="text-align:left;">
+          <span class="alert-icon">⚠️</span>
+          <div style="font-size:12px;">Change your password immediately after logging in via <strong>Account Settings</strong>.</div>
+        </div>
+      </div>
+      <div id="forgot-form-view">
+        <p style="font-size:13px;color:var(--text2);margin-bottom:20px;line-height:1.6;">Enter your registered email address and we'll send a new temporary password to your inbox.</p>
+        <div class="form-group">
+          <label class="form-label">Email Address *</label>
+          <input class="form-input" type="email" id="forgot-email" placeholder="your@email.com" style="font-size:14px;padding:11px 14px;">
+        </div>
+        <div id="forgot-error" style="color:var(--red);font-size:12px;margin-top:4px;display:none;"></div>
+      </div>
+    </div>
+    <div class="modal-footer" id="forgot-footer">
+      <button class="btn btn-ghost" onclick="closeModal('forgot-password-modal');resetForgotForm()">Cancel</button>
+      <button class="btn btn-primary" id="forgot-submit-btn" onclick="doForgotPassword()">📧 Send New Password</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast container -->
+<div id="toast-container" style="position:fixed;bottom:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:8px;"></div>
+
+
+
+<script src="app.js"></script>
+
+<!-- QR Code Modal -->
+<div class="modal-overlay" id="qr-modal">
+  <div class="modal" style="max-width:360px;">
+    <div class="modal-header">
+      <div class="modal-title">🔲 Visitor QR Code</div>
+      <div class="modal-close" onclick="closeModal('qr-modal')">✕</div>
+    </div>
+    <div class="modal-body" style="text-align:center;padding:24px 20px;">
+      <div id="qr-resident-name" style="font-weight:700;font-size:15px;margin-bottom:4px;"></div>
+      <div id="qr-resident-address" style="font-size:12px;color:var(--text3);margin-bottom:20px;"></div>
+      <div id="qr-code-container" style="display:inline-block;padding:16px;background:#fff;border-radius:12px;margin-bottom:12px;"></div>
+      <div id="qr-timer"></div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:12px;">Visitor scans this QR to open the house location in Google Maps / Apple Maps</div>
+      <div id="qr-no-coords" style="display:none;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);border-radius:8px;padding:12px;font-size:12px;color:var(--yellow);">
+        ⚠️ No GPS location saved for this resident yet.<br>Admin must set the house location first.
+      </div>
+      <a id="qr-maps-link" href="#" style="display:none;margin-top:4px;font-size:12px;color:var(--accent);text-decoration:none;cursor:pointer;">🔗 Copy check-in link</a>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary" onclick="downloadQR()">⬇️ Download QR</button>
+      <button class="btn btn-ghost" onclick="closeModal('qr-modal')">Close</button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Apr 23, 2026 at 07:13 PM
+-- Generation Time: Apr 24, 2026 at 06:56 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -111,7 +111,8 @@ INSERT INTO `dues` (`id`, `resident_id`, `billing_month`, `amount`, `status`, `d
 (17, 12, '2026-04', 500.00, 'Unpaid', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'bayad', 'Monthly association dues for 2026-04', 1, '2026-04-23 14:44:01', '2026-04-23 14:44:01'),
 (18, 13, '2026-04', 500.00, 'Unpaid', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'bayad', 'Monthly association dues for 2026-04', 1, '2026-04-23 14:44:01', '2026-04-23 14:44:01'),
 (19, 14, '2026-04', 500.00, 'Paid', '2026-04-23 14:53:51', 'GCash', '312312312', 'uploads/payment_proofs/proof_19_14_1776927191.png', 1, 1, '2026-04-23 14:53:51', NULL, NULL, 'Monthly association dues for 2026-04', 1, '2026-04-23 14:51:11', '2026-04-23 14:51:11'),
-(20, 15, '2026-04', 500.00, 'Paid', '2026-04-24 00:50:24', 'GCash', '123123123', 'uploads/payment_proofs/proof_20_15_1776962971.jpg', 1, 1, '2026-04-24 00:50:24', NULL, NULL, 'Monthly association dues for 2026-04', 1, '2026-04-23 23:56:47', '2026-04-23 23:56:47');
+(20, 15, '2026-04', 500.00, 'Paid', '2026-04-24 00:50:24', 'GCash', '123123123', 'uploads/payment_proofs/proof_20_15_1776962971.jpg', 1, 1, '2026-04-24 00:50:24', NULL, NULL, 'Monthly association dues for 2026-04', 1, '2026-04-23 23:56:47', '2026-04-23 23:56:47'),
+(22, 16, '2026-04', 500.00, 'Unpaid', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'bayad na pls', 'Monthly association dues for 2026-04', 1, '2026-04-24 12:50:05', '2026-04-24 12:50:05');
 
 -- --------------------------------------------------------
 
@@ -145,7 +146,12 @@ INSERT INTO `incidents` (`id`, `incident_type`, `description`, `priority`, `bloc
 (11, 'Medical Emergency', 'tulong', 'High', 'Block B', '12', 10.26039572, 123.80269468, 4, 'In Progress', '', '2026-04-23 00:58:54', '2026-04-24 01:06:13'),
 (12, 'Theft/Robbery', 'qwe', 'High', 'Block A', '14', 10.25787780, 123.80242646, 5, 'In Progress', '', '2026-04-23 01:21:37', '2026-04-24 01:06:14'),
 (13, 'Theft/Robbery', 'kawat', 'High', 'Block B', '12', 10.25855281, 123.80222008, 28, 'Resolved', '', '2026-04-23 14:56:06', '2026-04-23 14:56:52'),
-(14, 'Theft/Robbery', 'dasd', 'High', 'Block B', '10', 10.25845760, 123.80174114, 28, 'Resolved', '', '2026-04-23 14:57:54', '2026-04-23 14:59:17');
+(14, 'Theft/Robbery', 'dasd', 'High', 'Block B', '10', 10.25845760, 123.80174114, 28, 'Resolved', '', '2026-04-23 14:57:54', '2026-04-23 14:59:17'),
+(15, 'Theft/Robbery', 'help', 'High', 'Unknown', NULL, 10.25844262, 123.80189538, 29, 'Open', NULL, '2026-04-24 12:16:44', '2026-04-24 12:16:44'),
+(16, 'Theft/Robbery', 'help', 'High', 'Unknown', NULL, 10.25844262, 123.80189538, 29, 'Resolved', '', '2026-04-24 12:16:53', '2026-04-24 12:31:07'),
+(17, 'Theft/Robbery', 'help', 'High', 'Unknown', NULL, 10.25844262, 123.80189538, 29, 'Resolved', '', '2026-04-24 12:16:54', '2026-04-24 12:30:55'),
+(18, 'Theft/Robbery', 'help', 'High', 'Unknown', NULL, 10.25844262, 123.80189538, 29, 'Resolved', '', '2026-04-24 12:16:54', '2026-04-24 12:31:05'),
+(19, 'Theft/Robbery', 'help', 'High', 'Unknown', NULL, 10.25844262, 123.80189538, 29, 'Resolved', '', '2026-04-24 12:16:54', '2026-04-24 12:31:07');
 
 -- --------------------------------------------------------
 
@@ -257,7 +263,8 @@ INSERT INTO `residents` (`id`, `lot_id`, `first_name`, `last_name`, `block`, `lo
 (12, NULL, 'John', 'Lloyd', '6', '16', '2026', 'Owner', '0956456435', 'admin_only', 'Active', 10.2597464, 123.8025820, NULL, '2026-04-23 02:12:55', NULL),
 (13, NULL, 'KC', 'Bolambot', '2', '17', '2026', 'Owner', '0967342343', 'admin_only', 'Active', 10.2583397, 123.8015279, NULL, '2026-04-23 02:17:24', NULL),
 (14, NULL, 'nash', 'nogra', 'Block E', '05', '2026', 'Owner', NULL, 'admin_only', 'Active', 10.2586236, 123.8022534, 28, '2026-04-23 14:48:31', '2026-04-23 23:47:56'),
-(15, NULL, 'Ushan', 'Sanchez', 'Block 11', '2', '2025', 'Owner', '09123431234', 'admin_only', 'Active', 10.2580539, 123.8023471, 4, '2026-04-23 23:55:40', NULL);
+(15, NULL, 'Ushan', 'Sanchez', 'Block 11', '2', '2025', 'Owner', '09123431234', 'admin_only', 'Active', 10.2580539, 123.8023471, 4, '2026-04-23 23:55:40', NULL),
+(16, NULL, 'JD', 'somera', '10', '13', '2026', 'Owner', '0912362312', 'admin_only', 'Active', 10.2609454, 123.8026437, 29, '2026-04-24 12:49:32', NULL);
 
 -- --------------------------------------------------------
 
@@ -330,12 +337,12 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`id`, `username`, `email`, `password_hash`, `password_reset_token`, `password_reset_expires`, `first_name`, `last_name`, `role`, `status`, `last_login`, `created_at`, `deleted_at`) VALUES
-(1, 'admin', NULL, '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', NULL, NULL, 'HOA', 'Administrator', 'Administrator', 'Active', '2026-04-24 01:12:30', '2026-03-09 22:30:07', NULL),
-(4, 'nashu', NULL, '$2y$10$e7Fl9sQ1rsDGQDdbsiPgA.fOtLR4DQfsOv8k1oaK1MSxl0ZzN3zCO', NULL, NULL, 'Nashu', 'Sanchez', 'Homeowner', 'Active', '2026-04-24 01:11:59', '2026-03-09 23:29:08', NULL),
-(5, 'ekosh', NULL, '$2y$10$a2.JHoAReAE584qeSG9isu0bhuByBpBEF0K1PN9GSO9E.u92vi8xm', NULL, NULL, 'Jericho', 'Alcala', 'Guard', 'Active', '2026-04-24 01:12:16', '2026-03-09 23:30:48', NULL),
+(1, 'admin', NULL, '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', NULL, NULL, 'HOA', 'Administrator', 'Administrator', 'Active', '2026-04-24 12:47:01', '2026-03-09 22:30:07', NULL),
+(4, 'nashu', NULL, '$2y$10$e7Fl9sQ1rsDGQDdbsiPgA.fOtLR4DQfsOv8k1oaK1MSxl0ZzN3zCO', NULL, NULL, 'Nashu', 'Sanchez', 'Homeowner', 'Active', '2026-04-24 12:50:28', '2026-03-09 23:29:08', NULL),
+(5, 'ekosh', NULL, '$2y$10$a2.JHoAReAE584qeSG9isu0bhuByBpBEF0K1PN9GSO9E.u92vi8xm', NULL, NULL, 'Jericho', 'Alcala', 'Guard', 'Active', '2026-04-24 12:45:38', '2026-03-09 23:30:48', NULL),
 (6, 'zeyuru', 'requirosoaaronr@gmail.com', '$2y$10$bY0TfcKXDnS1/XtdkKVa9.Ir3HNStXB5PBeUyiEWW3gCxcdYugx4C', NULL, NULL, 'Aaron', 'Ruiz', 'Homeowner', 'Active', '2026-04-05 22:39:42', '2026-04-05 22:33:17', '2026-04-05 22:44:49'),
 (28, 'nash123', 'batiisjimin@gmail.com', '$2y$10$F9QK6vqp23cd7yiFuzE/3.8/Lxcrbq6fmxsrEQjXJGBogQd4OAKhK', NULL, NULL, 'Nashu', 'Nogra', 'Homeowner', 'Active', '2026-04-23 15:01:31', '2026-04-23 14:42:10', NULL),
-(29, 'JD', 'somerajodeedwayne@gmail.com', '$2y$10$kR8TnWNIBPafWbzwPocNpe5UhI1qvwOYPEif8aiqS0Begw7pa3iZW', NULL, NULL, 'jd', 'somoera', 'Homeowner', 'Active', '2026-04-23 16:13:57', '2026-04-23 16:12:28', NULL);
+(29, 'JD', 'somerajodeedwayne@gmail.com', '$2y$10$kR8TnWNIBPafWbzwPocNpe5UhI1qvwOYPEif8aiqS0Begw7pa3iZW', NULL, NULL, 'jd', 'somoera', 'Homeowner', 'Active', '2026-04-24 12:51:00', '2026-04-23 16:12:28', NULL);
 
 -- --------------------------------------------------------
 
@@ -367,7 +374,8 @@ CREATE TABLE `visitors` (
 --
 
 INSERT INTO `visitors` (`id`, `visitor_name`, `purpose`, `visiting_resident_id`, `visiting_block`, `visiting_lot`, `visiting_homeowner_id`, `id_type`, `id_number`, `vehicle_plate`, `time_in`, `time_out`, `status`, `guard_id`, `notes`, `created_at`) VALUES
-(5, 'Aaron Requiroso', 'Guest Visit', NULL, 'Block A', '1', NULL, 'Driver\'s License', 'Expiration', NULL, '2026-04-21 17:54:33', '2026-04-23 02:20:05', 'Left', 5, NULL, '2026-04-21 17:54:33');
+(5, 'Aaron Requiroso', 'Guest Visit', NULL, 'Block A', '1', NULL, 'Driver\'s License', 'Expiration', NULL, '2026-04-21 17:54:33', '2026-04-23 02:20:05', 'Left', 5, NULL, '2026-04-21 17:54:33'),
+(6, 'johny', 'Delivery', NULL, '20', '14', NULL, 'Driver\'s License', '123123', '7845', '2026-04-24 12:35:01', NULL, 'Inside', 5, NULL, '2026-04-24 12:35:01');
 
 -- --------------------------------------------------------
 
@@ -536,13 +544,13 @@ ALTER TABLE `announcements`
 -- AUTO_INCREMENT for table `dues`
 --
 ALTER TABLE `dues`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=22;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=23;
 
 --
 -- AUTO_INCREMENT for table `incidents`
 --
 ALTER TABLE `incidents`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=20;
 
 --
 -- AUTO_INCREMENT for table `lots`
@@ -560,7 +568,7 @@ ALTER TABLE `notifications`
 -- AUTO_INCREMENT for table `residents`
 --
 ALTER TABLE `residents`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
 
 --
 -- AUTO_INCREMENT for table `shifts`
@@ -578,7 +586,7 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `visitors`
 --
 ALTER TABLE `visitors`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- Constraints for dumped tables

@@ -114,7 +114,6 @@
     <div class="nav-label">Access</div>
     <div class="nav-item nav-admin" onclick="showPanel('users',this)"><span class="icon">🔑</span><span>User Management</span></div>
     <div class="nav-item nav-admin" onclick="showPanel('reports',this)"><span class="icon">📋</span><span>Reports</span></div>
-    <div class="nav-item nav-guard" onclick="showPanel('guard',this)"><span class="icon">🛡️</span><span>Guard Console</span></div>
   </div>
 
   <div class="sidebar-footer">
@@ -358,7 +357,19 @@
       <div style="height:calc(100vh - 120px);">
         <div class="card" style="height:100%;">
           <div class="card-header"><div class="card-title">🗺️ Your Property & Neighborhood</div><span style="font-size:11px;color:var(--text3)">Powered by OpenStreetMap / Leaflet</span></div>
-          <div style="height:calc(100% - 50px);" id="full-map"></div>
+          <div style="height:calc(100% - 50px);position:relative;" id="full-map">
+            <!-- Search overlay — shown only to Admin/Guard via JS -->
+            <div id="live-map-search-wrap" style="display:none;position:absolute;top:12px;left:50%;transform:translateX(-50%);z-index:1000;width:280px;">
+              <div style="position:relative;">
+                <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:14px;pointer-events:none;">🔍</span>
+                <input id="live-map-search-input" class="form-input" placeholder="Search resident, block, or lot…" oninput="liveMapSearch(this.value)" autocomplete="off"
+                  style="width:100%;padding:8px 12px 8px 32px;background:rgba(14,20,35,.92);border:1px solid #1e2d47;border-radius:8px;color:#e2e8f0;font-size:12px;box-shadow:0 4px 16px rgba(0,0,0,.5);backdrop-filter:blur(8px);"
+                  onfocus="this.parentElement.nextElementSibling.style.display='block'"
+                  onblur="setTimeout(()=>{const d=document.getElementById('live-map-search-dropdown');if(d)d.style.display='none';},180)">
+              </div>
+              <div id="live-map-search-dropdown" style="display:none;background:rgba(14,20,35,.97);border:1px solid #1e2d47;border-radius:8px;margin-top:4px;box-shadow:0 8px 24px rgba(0,0,0,.6);overflow:hidden;"></div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -662,7 +673,17 @@
         </div>
         <div class="card">
           <div class="card-header"><div class="card-title">🗺️ Guard Navigation Map</div><span style="font-size:11px;color:var(--text3);">Villa Purita Subdivision - Click markers to navigate</span></div>
-          <div style="height:calc(100% - 50px);" id="guard-map"></div>
+          <div style="height:calc(100% - 50px);position:relative;" id="guard-map">
+            <div style="position:absolute;top:12px;left:50%;transform:translateX(-50%);z-index:1000;width:260px;">
+              <div style="position:relative;">
+                <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:14px;pointer-events:none;">🔍</span>
+                <input id="guard-map-search-input" class="form-input" placeholder="Search resident, block, or lot…" oninput="guardMapSearch(this.value)" autocomplete="off"
+                  style="width:100%;padding:8px 12px 8px 32px;background:rgba(14,20,35,.92);border:1px solid #1e2d47;border-radius:8px;color:#e2e8f0;font-size:12px;box-shadow:0 4px 16px rgba(0,0,0,.5);backdrop-filter:blur(8px);"
+                  onblur="setTimeout(()=>{const d=document.getElementById('guard-map-search-dropdown');if(d)d.style.display='none';},180)">
+              </div>
+              <div id="guard-map-search-dropdown" style="display:none;background:rgba(14,20,35,.97);border:1px solid #1e2d47;border-radius:8px;margin-top:4px;box-shadow:0 8px 24px rgba(0,0,0,.6);overflow:hidden;"></div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

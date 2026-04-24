@@ -17,7 +17,8 @@ let SESSION = { role:'', username:'', name:'', email:'', status:'', userId:0, lo
 // ─── Map instances ────────────────────────────────────────────────────────────
 let dashMap=null, fullMap=null, guardMap=null;
 let fullMapMarkers=[], guardMapMarkers=[], dashMapMarkers=[];
-let currentDirectionLine=null; // stores the direction polyline
+let currentDirectionLine=null; // stores the direction polyline (fullMap)
+let currentGuardDirectionLine=null; // stores the direction polyline (guardMap)
 
 // ─── Local state (filled from API) ────────────────────────────────────────────
 let STATE = {
@@ -144,6 +145,7 @@ function applyRoleAccess(role) {
   document.getElementById('new-record-btn').style.display = '';
   const annBtn = document.getElementById('announcement-add-btn');
   if (annBtn) annBtn.style.display = '';
+  const liveSearch = document.getElementById('live-map-search-wrap');
   if (role === 'Homeowner') {
     document.querySelectorAll('.nav-admin,.nav-guard').forEach(el => el.style.display='none');
     document.querySelectorAll('.nav-admin-section,.nav-guard-section').forEach(el => el.style.display='none');
@@ -151,6 +153,7 @@ function applyRoleAccess(role) {
     if (annBtn) annBtn.style.display = 'none';
     // Show homeowner-only action items that were hidden by nav-guard sweep
     document.querySelectorAll('.ho-action').forEach(el => el.style.display='flex');
+    if (liveSearch) liveSearch.style.display = 'none';
   } else if (role === 'Guard') {
     document.querySelectorAll('.nav-admin:not(.nav-guard)').forEach(el => el.style.display='none');
     document.querySelectorAll('.nav-admin-section').forEach(el => el.style.display='none');
@@ -161,9 +164,11 @@ function applyRoleAccess(role) {
     if (annBtn) annBtn.style.display = 'none';
     // Hide admin-only elements in residents panel
     document.querySelectorAll('.admin-only-el').forEach(el => el.style.display='none');
+    if (liveSearch) liveSearch.style.display = 'block';
   } else {
     // Admin — hide homeowner-only actions
     document.querySelectorAll('.ho-action').forEach(el => el.style.display='none');
+    if (liveSearch) liveSearch.style.display = 'block';
   }
 }
 
@@ -333,10 +338,16 @@ function debugResidentCoords() {
   })));
 }
 
-function popupHtml(r) {
+function popupHtml(r, mapId) {
   const col   = resColor(r);
   const dues  = r.dues_status || 'Unpaid';
   const pin   = hasRealCoords(r) ? '📍 <span style="color:#10b981;font-size:9px;">GPS saved</span>' : '📍 <span style="color:#f59e0b;font-size:9px;">Estimated</span>';
+  const isAdminOrGuard = SESSION.role === 'Administrator' || SESSION.role === 'Guard';
+  const actionBtns = isAdminOrGuard ? `
+    <div style="display:flex;gap:5px;margin-top:8px;">
+      <button onclick="popupShowQR(${r.id})" style="flex:1;padding:4px 0;font-size:10px;font-weight:600;background:#1e3a5f;color:#60a5fa;border:1px solid #2563eb55;border-radius:5px;cursor:pointer;">🔲 Visitor QR</button>
+      <button onclick="popupGetDirections(${r.id},'${mapId||'full'}')" style="flex:1;padding:4px 0;font-size:10px;font-weight:600;background:#1a3a2a;color:#34d399;border:1px solid #10b98155;border-radius:5px;cursor:pointer;">📍 Get Directions</button>
+    </div>` : '';
   return `<div style="font-family:'DM Sans',sans-serif;min-width:180px;padding:2px 0;">
     <div style="font-weight:700;font-size:13px;margin-bottom:2px;">${r.last_name}, ${r.first_name}</div>
     <div style="font-size:11px;color:#64748b;margin-bottom:8px;">${r.block} · Lot ${r.lot_number} · ${r.occupancy_status}</div>
@@ -345,7 +356,27 @@ function popupHtml(r) {
       <span style="padding:2px 7px;border-radius:4px;font-size:10px;font-weight:600;background:${col}22;color:${col};border:1px solid ${col}55;">💰 ${dues}</span>
     </div>
     <div style="font-size:10px;color:#64748b;">${pin}</div>
+    ${actionBtns}
   </div>`;
+}
+
+// Called from popup buttons — works on both fullMap and guardMap
+function popupShowQR(resId) {
+  showResidentQR(resId);
+}
+
+function popupGetDirections(resId, mapId) {
+  const markers = mapId === 'guard' ? guardMapMarkers : fullMapMarkers;
+  const mapInst  = mapId === 'guard' ? guardMap : fullMap;
+  const e = markers.find(m => m.r.id === resId);
+  if (!e || !mapInst) return;
+  if (mapId === 'guard') {
+    drawGuardDirectionLine(e.coords);
+  } else {
+    drawDirectionLine(e.coords);
+  }
+  mapInst.setView(e.coords, 19, {animate:true});
+  toast('📍 Directions drawn to ' + e.r.last_name + ', ' + e.r.first_name, 'info');
 }
 
 // ── Add Legend to a Leaflet map ───────────────────────────────────────────────
@@ -415,7 +446,7 @@ function initMaps() {
       if (myResident) {
         const coords = resCoords(myResident, 0);
         const m = L.marker(coords, {icon:makeIcon(resColor(myResident), hasRealCoords(myResident))})
-          .addTo(dashMap).bindPopup(popupHtml(myResident));
+          .addTo(dashMap).bindPopup(popupHtml(myResident, 'full'));
         dashMapMarkers.push({r: myResident, m});
         dashMap.setView(coords, 19);
       }
@@ -446,7 +477,7 @@ function initMaps() {
     } else {
       // Admin / Guard: show all residents + incidents + legend
       STATE.residents.forEach((r,i) => {
-        const m = L.marker(resCoords(r,i), {icon:makeIcon(resColor(r), hasRealCoords(r))}).addTo(dashMap).bindPopup(popupHtml(r));
+        const m = L.marker(resCoords(r,i), {icon:makeIcon(resColor(r), hasRealCoords(r))}).addTo(dashMap).bindPopup(popupHtml(r, 'full'));
         dashMapMarkers.push({r, m});
       });
       STATE.incidents.filter(i => i.status !== 'Resolved').forEach(inc => {
@@ -499,7 +530,7 @@ function initFullMap() {
   residentsToShow.forEach((r,i) => {
     const coords = resCoords(r,i);
     const m = L.marker(coords, {icon:makeIcon(resColor(r), hasRealCoords(r))}).addTo(fullMap);
-    m.bindPopup(popupHtml(r));
+    m.bindPopup(popupHtml(r, 'full'));
     m.on('click', () => showMapDetail(r, m, coords));
     fullMapMarkers.push({r, m, coords});
   });
@@ -531,7 +562,7 @@ function initGuardMap() {
   STATE.residents.forEach((r,i) => {
     const coords = resCoords(r,i);
     const m = L.marker(coords, {icon:makeIcon(resColor(r), hasRealCoords(r))}).addTo(guardMap);
-    m.bindPopup(popupHtml(r));
+    m.bindPopup(popupHtml(r, 'guard'));
     guardMapMarkers.push({r, m, coords});
   });
   // Active incident markers
@@ -583,6 +614,7 @@ function addSubdivisionLabel(map) {
 
 function destroyMaps() {
   clearDirectionLine();
+  clearGuardDirectionLine();
   if (dashMap)  { dashMap.remove();  dashMap=null;  dashMapMarkers=[]; }
   if (fullMap)  { fullMap.remove();  fullMap=null;  fullMapMarkers=[]; }
   if (guardMap) { guardMap.remove(); guardMap=null; guardMapMarkers=[]; }
@@ -602,7 +634,7 @@ function refreshMapMarkers() {
       if (updated.latitude && updated.longitude) {
         m.setLatLng([parseFloat(updated.latitude), parseFloat(updated.longitude)]);
       }
-      m.setPopupContent(popupHtml(r));
+      m.setPopupContent(popupHtml(r, 'full'));
     }
   });
   guardMapMarkers.forEach(({r, m}) => {
@@ -616,7 +648,7 @@ function refreshMapMarkers() {
       if (updated.latitude && updated.longitude) {
         m.setLatLng([parseFloat(updated.latitude), parseFloat(updated.longitude)]);
       }
-      m.setPopupContent(popupHtml(r));
+      m.setPopupContent(popupHtml(r, 'guard'));
     }
   });
   dashMapMarkers.forEach(({r, m}) => {
@@ -630,7 +662,7 @@ function refreshMapMarkers() {
       if (updated.latitude && updated.longitude) {
         m.setLatLng([parseFloat(updated.latitude), parseFloat(updated.longitude)]);
       }
-      m.setPopupContent(popupHtml(r));
+      m.setPopupContent(popupHtml(r, 'full'));
     }
   });
 }
@@ -691,37 +723,183 @@ function clearDirectionLine() {
   }
 }
 
+function clearGuardDirectionLine() {
+  if (currentGuardDirectionLine && guardMap) {
+    guardMap.removeLayer(currentGuardDirectionLine);
+    currentGuardDirectionLine = null;
+  }
+}
+
 function drawDirectionLine(toCoords) {
   clearDirectionLine();
   if (!fullMap || !toCoords) return;
-  
+
   const from = VILLA_PURITA_COORDS;
-  const to = toCoords;
-  const url = `https://router.project-osrm.org/route/v1/driving/${from[1]},${from[0]};${to[1]},${to[0]}?overview=full&geometries=geojson`;
-  
-  fetch(url)
-    .then(res => res.json())
+  const to   = toCoords;
+
+  // Try OSRM foot (walking) profile — better for short intra-subdivision distances
+  const osrmFoot    = `https://router.project-osrm.org/route/v1/foot/${from[1]},${from[0]};${to[1]},${to[0]}?overview=full&geometries=geojson`;
+  const osrmDriving = `https://router.project-osrm.org/route/v1/driving/${from[1]},${from[0]};${to[1]},${to[0]}?overview=full&geometries=geojson`;
+
+  function applyRoute(coords) {
+    currentDirectionLine = L.polyline(coords, {
+      color: '#3b82f6', weight: 4, opacity: 0.85,
+      dashArray: null, lineCap: 'round', lineJoin: 'round'
+    }).addTo(fullMap);
+    fullMap.fitBounds(currentDirectionLine.getBounds(), { padding: [40, 40] });
+  }
+
+  function drawStraight() {
+    currentDirectionLine = L.polyline([from, to], {
+      color: '#3b82f6', weight: 3, opacity: 0.7,
+      dashArray: '8, 8', lineCap: 'round'
+    }).addTo(fullMap);
+  }
+
+  fetch(osrmFoot)
+    .then(r => r.json())
     .then(data => {
-      if (data.routes && data.routes[0]) {
-        const coords = data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
-        currentDirectionLine = L.polyline(coords, {
-          color: '#3b82f6',
-          weight: 3,
-          opacity: 0.75,
-          dashArray: '5, 5',
-          lineCap: 'round'
-        }).addTo(fullMap);
+      if (data.routes && data.routes[0] && data.routes[0].geometry.coordinates.length > 2) {
+        applyRoute(data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]));
+      } else {
+        return fetch(osrmDriving).then(r => r.json()).then(data2 => {
+          if (data2.routes && data2.routes[0]) {
+            applyRoute(data2.routes[0].geometry.coordinates.map(c => [c[1], c[0]]));
+          } else { drawStraight(); }
+        });
       }
     })
     .catch(() => {
-      currentDirectionLine = L.polyline([from, to], {
-        color: '#3b82f6',
-        weight: 2,
-        opacity: 0.7,
-        dashArray: '5, 5',
-        lineCap: 'round'
-      }).addTo(fullMap);
+      fetch(osrmDriving)
+        .then(r => r.json())
+        .then(data => {
+          if (data.routes && data.routes[0]) {
+            applyRoute(data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]));
+          } else { drawStraight(); }
+        })
+        .catch(() => drawStraight());
     });
+}
+
+function drawGuardDirectionLine(toCoords) {
+  clearGuardDirectionLine();
+  if (!guardMap || !toCoords) return;
+
+  const from = VILLA_PURITA_COORDS;
+  const to   = toCoords;
+
+  const osrmFoot    = `https://router.project-osrm.org/route/v1/foot/${from[1]},${from[0]};${to[1]},${to[0]}?overview=full&geometries=geojson`;
+  const osrmDriving = `https://router.project-osrm.org/route/v1/driving/${from[1]},${from[0]};${to[1]},${to[0]}?overview=full&geometries=geojson`;
+
+  function applyRoute(coords) {
+    currentGuardDirectionLine = L.polyline(coords, {
+      color: '#3b82f6', weight: 4, opacity: 0.85,
+      dashArray: null, lineCap: 'round', lineJoin: 'round'
+    }).addTo(guardMap);
+    guardMap.fitBounds(currentGuardDirectionLine.getBounds(), { padding: [40, 40] });
+  }
+
+  function drawStraight() {
+    currentGuardDirectionLine = L.polyline([from, to], {
+      color: '#3b82f6', weight: 3, opacity: 0.7,
+      dashArray: '8, 8', lineCap: 'round'
+    }).addTo(guardMap);
+  }
+
+  fetch(osrmFoot)
+    .then(r => r.json())
+    .then(data => {
+      if (data.routes && data.routes[0] && data.routes[0].geometry.coordinates.length > 2) {
+        applyRoute(data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]));
+      } else {
+        return fetch(osrmDriving).then(r => r.json()).then(data2 => {
+          if (data2.routes && data2.routes[0]) {
+            applyRoute(data2.routes[0].geometry.coordinates.map(c => [c[1], c[0]]));
+          } else { drawStraight(); }
+        });
+      }
+    })
+    .catch(() => {
+      fetch(osrmDriving)
+        .then(r => r.json())
+        .then(data => {
+          if (data.routes && data.routes[0]) {
+            applyRoute(data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]));
+          } else { drawStraight(); }
+        })
+        .catch(() => drawStraight());
+    });
+}
+
+// ── Map overlay search bars ───────────────────────────────────────────────────
+function liveMapSearch(q) {
+  const dropdown = document.getElementById('live-map-search-dropdown');
+  if (!dropdown) return;
+  if (!q.trim()) { dropdown.style.display = 'none'; return; }
+  const matches = STATE.residents.filter(r =>
+    (r.first_name + ' ' + r.last_name + ' ' + r.block + ' lot ' + r.lot_number)
+      .toLowerCase().includes(q.toLowerCase())
+  ).slice(0, 6);
+  if (!matches.length) {
+    dropdown.innerHTML = '<div style="padding:10px 12px;font-size:12px;color:#94a3b8;">No residents found</div>';
+    dropdown.style.display = 'block';
+    return;
+  }
+  dropdown.innerHTML = matches.map(r =>
+    `<div onclick="liveMapSearchSelect(${r.id})" style="padding:9px 12px;cursor:pointer;border-bottom:1px solid #1e2d47;display:flex;justify-content:space-between;align-items:center;" onmouseover="this.style.background='#1e2d47'" onmouseout="this.style.background='transparent'">
+      <div>
+        <div style="font-size:13px;font-weight:600;color:#e2e8f0;">${r.last_name}, ${r.first_name}</div>
+        <div style="font-size:11px;color:#64748b;">${r.block} · Lot ${r.lot_number}</div>
+      </div>
+      <span style="font-size:10px;color:#3b82f6;">📍 Go</span>
+    </div>`
+  ).join('');
+  dropdown.style.display = 'block';
+}
+
+function liveMapSearchSelect(rid) {
+  const dropdown = document.getElementById('live-map-search-dropdown');
+  const input    = document.getElementById('live-map-search-input');
+  const e = fullMapMarkers.find(m => m.r.id === rid);
+  if (dropdown) dropdown.style.display = 'none';
+  if (input) input.value = '';
+  if (!e) return;
+  locateOnMap(rid);
+}
+
+function guardMapSearch(q) {
+  const dropdown = document.getElementById('guard-map-search-dropdown');
+  if (!dropdown) return;
+  if (!q.trim()) { dropdown.style.display = 'none'; return; }
+  const matches = STATE.residents.filter(r =>
+    (r.first_name + ' ' + r.last_name + ' ' + r.block + ' lot ' + r.lot_number)
+      .toLowerCase().includes(q.toLowerCase())
+  ).slice(0, 6);
+  if (!matches.length) {
+    dropdown.innerHTML = '<div style="padding:10px 12px;font-size:12px;color:#94a3b8;">No residents found</div>';
+    dropdown.style.display = 'block';
+    return;
+  }
+  dropdown.innerHTML = matches.map(r =>
+    `<div onclick="guardMapSearchSelect(${r.id})" style="padding:9px 12px;cursor:pointer;border-bottom:1px solid #1e2d47;display:flex;justify-content:space-between;align-items:center;" onmouseover="this.style.background='#1e2d47'" onmouseout="this.style.background='transparent'">
+      <div>
+        <div style="font-size:13px;font-weight:600;color:#e2e8f0;">${r.last_name}, ${r.first_name}</div>
+        <div style="font-size:11px;color:#64748b;">${r.block} · Lot ${r.lot_number}</div>
+      </div>
+      <span style="font-size:10px;color:#3b82f6;">📍 Go</span>
+    </div>`
+  ).join('');
+  dropdown.style.display = 'block';
+}
+
+function guardMapSearchSelect(rid) {
+  const dropdown = document.getElementById('guard-map-search-dropdown');
+  const input    = document.getElementById('guard-map-search-input');
+  if (dropdown) dropdown.style.display = 'none';
+  if (input) input.value = '';
+  guardLocate(rid);
+  const e = guardMapMarkers.find(m => m.r.id === rid);
+  if (e) drawGuardDirectionLine(e.coords);
 }
 
 function locateOnMap(rid) {

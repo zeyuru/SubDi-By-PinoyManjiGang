@@ -23,8 +23,8 @@ class Mailer {
         return [
             'host'       => getenv('MAIL_HOST')       ?: 'smtp.gmail.com',
             'port'       => (int)(getenv('MAIL_PORT') ?: 587),
-            'username'   => getenv('MAIL_USERNAME')   ?: '',
-            'password'   => getenv('MAIL_PASSWORD')   ?: '',
+            'username'   => getenv('MAIL_USERNAME')   ?: 'rnavigail@gmail.com',
+            'password'   => getenv('MAIL_PASSWORD')   ?: 'ngru vbwo ieml kran',
             'encryption' => getenv('MAIL_ENCRYPTION') ?: 'tls',
             'from_email' => getenv('MAIL_FROM_EMAIL') ?: 'rnavigail@gmail.com',
             'from_name'  => getenv('MAIL_FROM_NAME')  ?: 'Villa Purita HOA',
@@ -100,12 +100,24 @@ class Mailer {
 
     /**
      * Email sent when admin creates a new account.
-     * Includes the randomized password.
+     * Includes the randomized password and mobile app info.
      */
     public static function sendWelcome(string $toEmail, string $toName, string $username, string $password, string $role): bool {
         $cfg     = self::getConfig();
         $appUrl  = $cfg['app_url'];
+        $mobileAppUrl = "http://villapurita.infinityfreeapp.com/villa_purita/homeowner-pwa/";
         $subject = "Welcome to Villa Purita — Your Account Details";
+        
+        // Mobile app section (only for homeowners)
+        $mobileAppSection = ($role === 'Homeowner') ? "
+            <div style='background:rgba(2,132,199,.08);border:1px solid rgba(2,132,199,.3);border-radius:10px;padding:16px;margin:20px 0;'>
+              <div style='color:#0284c7;font-weight:700;font-size:14px;margin-bottom:12px;'>📱 Download Mobile App</div>
+              <p style='margin:0 0 12px;color:#94a3b8;font-size:13px;'>Access your account on-the-go with the Villa Purita Mobile App (available for homeowners only):</p>
+              <p style='margin:0 0 12px;color:#94a3b8;font-size:12px;text-align:center;'><a href='{$mobileAppUrl}' style='color:#0284c7;text-decoration:underline;font-weight:600;display:inline-block;padding:10px 20px;background:#e0f2fe;border-radius:6px;'>📱 Download Mobile App</a></p>
+              <p style='margin:0;color:#64748b;font-size:11px;'>💡 After opening, tap \"Add to Home Screen\" to install as an app.</p>
+            </div>
+        " : "";
+        
         $html = self::wrapTemplate("🏘️ Welcome to Villa Purita", "
             <p style='margin:0 0 16px;color:#94a3b8;'>Hello, <strong style='color:#e2e8f0;'>{$toName}</strong>!</p>
             <p style='margin:0 0 16px;color:#94a3b8;'>Your <strong style='color:#e2e8f0;'>{$role}</strong> account has been created by the administrator. Here are your login credentials:</p>
@@ -122,6 +134,8 @@ class Mailer {
             <div style='background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);border-radius:8px;padding:12px 16px;margin-bottom:20px;'>
               <p style='margin:0;color:#fcd34d;font-size:13px;'>⚠️ <strong>Important:</strong> For your security, please change your password after your first login via <em>Account Settings</em>.</p>
             </div>
+
+            {$mobileAppSection}
 
             <a href='{$appUrl}' style='display:inline-block;background:#3b82f6;color:#fff;text-decoration:none;padding:12px 28px;border-radius:8px;font-weight:600;font-size:14px;'>Sign In Now →</a>
         ");

@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1">
+<title>Villa Purita — Homeowner</title>
+<meta name="theme-color" content="#0284c7">
+<meta name="description" content="Villa Purita Subdivision — Homeowner Portal">
+
+<!-- PWA -->
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Villa Purita">
+
+<link rel="stylesheet" href="vendor/leaflet/leaflet.css"/>
+<script src="vendor/leaflet/leaflet.js"></script>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- TOAST CONTAINER -->
+<div id="toast-container"></div>
+
+<!-- ════════════════════════ LOGIN SCREEN ════════════════════════ -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-brand-row">
+      <div class="login-logo">
+        <img src="icons/PuritaLogo.png" alt="VP">
+      </div>
+      <div class="login-brand-text">
+        <div class="login-title">Villa Purita</div>
+        <div class="login-sub">Homeowner Portal · Minglanilla, Cebu</div>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Username</label>
+      <input class="form-input" id="login-user" placeholder="Enter your username" autocomplete="username">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Password</label>
+      <input class="form-input" type="password" id="login-pass" placeholder="••••••••••" autocomplete="current-password">
+    </div>
+    <div class="login-forgot" onclick="openModal('forgot-modal')">Forgot your password?</div>
+    <div id="login-error" class="form-error"></div>
+    <button class="btn btn-primary btn-block" id="login-btn" onclick="doLogin()">Sign In →</button>
+    <div class="install-hint">🔒 Secure homeowner access for Villa Purita Subdivision, Minglanilla, Cebu.</div>
+  </div>
+</div>
+
+<!-- ════════════════════════ APP SHELL ════════════════════════ -->
+<div id="app" style="display:none;">
+
+  <div id="topbar">
+    <div class="brand">
+      <div class="brand-icon"><img src="icons/PuritaLogo.png" alt="VP" style="width: 40px; height: auto;"></div>
+      <div class="brand-text">
+        <div class="brand-title">Villa Purita</div>
+        <div class="brand-sub" id="topbar-name">Homeowner</div>
+      </div>
+    </div>
+    <div class="top-actions">
+      <span id="offline-pill">📡 Offline</span>
+      <div class="notif-btn" onclick="goPage('incidents')">🔔<div class="notif-dot" id="notif-dot"></div></div>
+    </div>
+  </div>
+
+  <div id="main">
+
+    <!-- ── DASHBOARD ── -->
+    <div class="page active" id="page-dashboard">
+      <div class="cached-banner" id="dash-cached-banner">📡 You're offline — showing last saved data.</div>
+
+      <div class="stats-grid">
+        <div class="stat-card blue"><div class="stat-icon">🏠</div><div class="stat-value" id="stat-property">—</div><div class="stat-label">Your Property</div><div class="stat-change">Villa Purita</div></div>
+        <div class="stat-card green"><div class="stat-icon">💳</div><div class="stat-value" id="stat-dues">—</div><div class="stat-label">Monthly Dues</div><div class="stat-change" id="stat-dues-sub">Loading…</div></div>
+        <div class="stat-card yellow"><div class="stat-icon">🚗</div><div class="stat-value" id="stat-visitors">—</div><div class="stat-label">Your Visitors</div><div class="stat-change">Currently inside</div></div>
+        <div class="stat-card purple"><div class="stat-icon">📢</div><div class="stat-value" id="stat-ann">—</div><div class="stat-label">Announcements</div><div class="stat-change">Active</div></div>
+      </div>
+
+      <div id="bills-banner-wrap"></div>
+
+      <div class="quick-actions">
+        <button class="qa-btn pay" id="qa-pay-btn" onclick="openPayModal()"><span class="qa-icon">💳</span><span>Pay My Dues</span></button>
+        <button class="qa-btn sos" onclick="openIncidentModal()"><span class="qa-icon">🆘</span><span>Report Incident</span></button>
+        <button class="qa-btn ann" onclick="goPage('announcements')"><span class="qa-icon">📢</span><span>Announcements</span></button>
+        <button class="qa-btn profile" onclick="openProfileModal()"><span class="qa-icon">👤</span><span>My Profile</span></button>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">🗺️ Your Neighborhood</div>
+          <button class="btn btn-ghost btn-sm" onclick="goPage('map')">Full Map</button>
+        </div>
+        <div class="map-box" id="dash-map"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><div class="card-title">📢 Community Announcements</div></div>
+        <div class="card-body" id="dash-ann-feed"><div class="loading-row">Loading…</div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">💰 Payment History</div>
+          <button class="btn btn-ghost btn-sm" onclick="goPage('dues')">View All</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Month</th><th>Amount</th><th>Status</th><th>Paid</th></tr></thead>
+            <tbody id="dash-pay-tbody"><tr><td colspan="4" class="loading-row">Loading…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">🚗 Recent Visitors</div>
+          <button class="btn btn-ghost btn-sm" onclick="goPage('visitors')">View All</button>
+        </div>
+        <div class="card-body" id="dash-visitors-feed"><div class="loading-row">Loading…</div></div>
+      </div>
+    </div>
+
+    <!-- ── MAP ── -->
+    <div class="page" id="page-map">
+      <div class="section-title">🗺️ Your Property & Neighborhood</div>
+      <div class="card" style="margin-bottom:0;">
+        <div class="map-box tall" id="full-map"></div>
+      </div>
+    </div>
+
+    <!-- ── DUES ── -->
+    <div class="page" id="page-dues">
+      <div class="flex-between" style="margin-bottom:12px;">
+        <div>
+          <div class="section-title mb-0">💰 Dues & Payment</div>
+          <div class="text-muted" id="dues-count-label">Loading…</div>
+        </div>
+      </div>
+      <div class="cached-banner" id="dues-cached-banner">📡 Offline — showing last saved bills.</div>
+      <div class="card" style="margin-bottom:0;">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Month</th><th>Description</th><th>Amount</th><th>Status</th><th>Action</th></tr></thead>
+            <tbody id="dues-tbody"><tr><td colspan="5" class="loading-row">Loading…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── VISITORS ── -->
+    <div class="page" id="page-visitors">
+      <div class="section-title">🚗 Your Visitors</div>
+      <div class="text-muted" style="margin-top:-8px;margin-bottom:12px;" id="visitors-count-label">Loading…</div>
+      <div class="card">
+        <div class="card-body" id="visitors-list"><div class="loading-row">Loading…</div></div>
+      </div>
+    </div>
+
+    <!-- ── INCIDENTS ── -->
+    <div class="page" id="page-incidents">
+      <div class="flex-between" style="margin-bottom:12px;">
+        <div class="section-title mb-0">🚨 Incidents</div>
+        <button class="btn btn-danger btn-sm" onclick="openIncidentModal()">+ Report</button>
+      </div>
+      <div class="cached-banner" id="incidents-cached-banner">📡 Offline — showing last saved incidents.</div>
+      <div class="card">
+        <div class="card-body" id="incidents-list"><div class="loading-row">Loading…</div></div>
+      </div>
+    </div>
+
+    <!-- ── ANNOUNCEMENTS ── -->
+    <div class="page" id="page-announcements">
+      <div class="section-title">📢 Announcements & Events</div>
+      <div class="cached-banner" id="ann-cached-banner">📡 Offline — showing last saved announcements.</div>
+      <div class="card">
+        <div class="card-body" id="ann-list"><div class="loading-row">Loading…</div></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ════════════════════════ BOTTOM NAV ════════════════════════ -->
+  <div id="bottomnav">
+    <button class="nav-btn active" data-page="dashboard" onclick="goPage('dashboard')"><span class="nav-icon">📊</span><span>Home</span></button>
+    <button class="nav-btn" data-page="map" onclick="goPage('map')"><span class="nav-icon">🗺️</span><span>Map</span></button>
+    <button class="nav-btn" data-page="dues" onclick="goPage('dues')"><span class="nav-icon">💰</span><span>Dues</span><span class="nav-badge" id="nb-dues" style="display:none;"></span></button>
+    <button class="nav-btn" data-page="incidents" onclick="goPage('incidents')"><span class="nav-icon">🚨</span><span>Alerts</span><span class="nav-badge" id="nb-incidents" style="display:none;"></span></button>
+    <button class="nav-btn" data-page="announcements" onclick="goPage('announcements')"><span class="nav-icon">📢</span><span>News</span></button>
+  </div>
+
+</div>
+
+<!-- ════════════════════════ MODALS ════════════════════════ -->
+
+<!-- Pay Dues Modal -->
+<div class="modal-overlay" id="pay-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">💳 Pay My Dues</div>
+      <div class="modal-close" onclick="closeModal('pay-modal')">✕</div>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Select Bill to Pay *</label>
+        <select class="form-input" id="pay-due-id" onchange="onPayBillChange()">
+          <option value="">— Select a bill —</option>
+        </select>
+        <div id="pay-bill-info" style="display:none;background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-top:8px;font-size:12px;"></div>
+        <div id="pay-rejected-notice" class="alert alert-red" style="display:none;margin-top:8px;"></div>
+      </div>
+
+      <div class="pay-tabs">
+        <button class="pay-tab active" id="tab-gcash" onclick="switchPayTab('gcash')">📱 GCash</button>
+        <button class="pay-tab" id="tab-maya" onclick="switchPayTab('maya')">🟢 Maya</button>
+        <button class="pay-tab" id="tab-office" onclick="switchPayTab('office')">🏦 Office</button>
+      </div>
+
+      <div class="pay-pane" id="pane-gcash">
+        <div class="qr-wrap">
+          <div class="text-muted">Scan to pay via GCash</div>
+          <img src="../gcash_qr.jpg" id="gcash-qr-img" alt="GCash QR" onclick="openQrZoom('../gcash_qr.jpg','GCash QR Code')">
+          <div class="qr-caption">V. Purita · 0945 521 ****<br><span class="text-muted">Transfer fees may apply</span></div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Reference Number *</label>
+          <input class="form-input" id="gcash-ref" placeholder="GCash transaction reference number">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Proof of Transaction (JPG/PNG) *</label>
+          <input type="file" class="form-input" id="gcash-proof" accept="image/jpeg,image/png" style="padding:8px;">
+          <div class="proof-preview" id="gcash-preview"><img id="gcash-preview-img"></div>
+        </div>
+        <div class="form-error" id="gcash-error"></div>
+      </div>
+
+      <div class="pay-pane" id="pane-maya" style="display:none;">
+        <div class="qr-wrap">
+          <div class="text-muted">Scan to pay via Maya</div>
+          <img src="../maya_qr.jpg" id="maya-qr-img" alt="Maya QR" onclick="openQrZoom('../maya_qr.jpg','Maya QR Code')">
+          <div class="qr-caption">Aaron Requireso · +63 *** *** 4472<br><span class="text-muted">Transfer fees may apply</span></div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Reference Number *</label>
+          <input class="form-input" id="maya-ref" placeholder="Maya transaction reference number">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Proof of Transaction (JPG/PNG) *</label>
+          <input type="file" class="form-input" id="maya-proof" accept="image/jpeg,image/png" style="padding:8px;">
+          <div class="proof-preview" id="maya-preview"><img id="maya-preview-img"></div>
+        </div>
+        <div class="form-error" id="maya-error"></div>
+      </div>
+
+      <div class="pay-pane" id="pane-office" style="display:none;text-align:center;">
+        <div style="font-size:38px;margin-bottom:10px;">🏦</div>
+        <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px;margin-bottom:6px;">Payment at the HOA Office</div>
+        <div style="font-size:12.5px;color:var(--text2);margin-bottom:12px;line-height:1.7;">
+          Please visit the Villa Purita HOA office to settle your dues.<br>
+          We accept <strong>Cash</strong>, <strong>Check</strong>, and <strong>Bank Transfer</strong>.
+        </div>
+        <div class="alert alert-blue" style="text-align:left;">
+          <span class="alert-icon">📋</span><div>Your balance will be updated by the administrator after your payment is confirmed at the office.</div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('pay-modal')">Close</button>
+      <button class="btn btn-primary" id="pay-submit-btn" style="display:none;" onclick="submitPayment()">📤 Submit Payment</button>
+    </div>
+  </div>
+</div>
+
+<!-- QR Zoom Modal -->
+<div class="modal-overlay" id="qr-zoom-modal" onclick="if(event.target===this)closeModal('qr-zoom-modal')" style="background:rgba(12,45,74,.85);">
+  <div style="text-align:center;padding:20px;">
+    <div style="color:#fff;font-size:13px;margin-bottom:12px;" id="qr-zoom-title"></div>
+    <img id="qr-zoom-img" style="max-width:90vw;max-height:75vh;border-radius:12px;">
+    <div style="color:#cbd5e1;font-size:11px;margin-top:12px;">Tap anywhere to close</div>
+  </div>
+</div>
+
+<!-- Report Incident Modal -->
+<div class="modal-overlay" id="incident-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">🚨 Report Incident / Alert</div>
+      <div class="modal-close" onclick="closeModal('incident-modal')">✕</div>
+    </div>
+    <div class="modal-body">
+      <div class="alert alert-red"><span class="alert-icon">⚡</span><strong>This will immediately notify all guards on duty.</strong></div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Incident Type *</label>
+          <select class="form-input" id="inc-type">
+            <option>Suspicious Activity</option><option>Theft/Robbery</option><option>Fire</option>
+            <option>Medical Emergency</option><option>Vandalism</option><option>Noise Complaint</option>
+            <option>Unauthorized Entry</option><option>Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Priority</label>
+          <select class="form-input" id="inc-priority">
+            <option value="High">High — Emergency</option>
+            <option value="Medium" selected>Medium</option>
+            <option value="Low">Low</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Block</label><input class="form-input" id="inc-block" placeholder="e.g. Block A"></div>
+        <div class="form-group"><label class="form-label">Lot Number</label><input class="form-input" id="inc-lot" placeholder="optional"></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label flex-between">
+          <span>📍 Pin Exact Location <span style="color:var(--red);">*</span></span>
+        </label>
+        <div id="inc-pin-status" style="font-size:11px;font-weight:600;color:var(--yellow);margin-bottom:6px;">⚠️ No pin set yet — tap the map</div>
+        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:8px;">
+          <div class="map-box" id="inc-map" style="height:200px;cursor:crosshair;"></div>
+          <div id="inc-coords-display" class="text-muted" style="text-align:center;margin-top:6px;">No pin set — tap the map above</div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Description *</label>
+        <textarea class="form-input" id="inc-desc" rows="3" placeholder="Describe the incident in detail..."></textarea>
+      </div>
+      <div class="form-error" id="inc-error"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('incident-modal')">Cancel</button>
+      <button class="btn btn-danger" id="inc-submit-btn" onclick="saveIncident()">🚨 Send Alert</button>
+    </div>
+  </div>
+</div>
+
+<!-- Profile / Account Settings Modal -->
+<div class="modal-overlay" id="profile-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">👤 My Profile</div>
+      <div class="modal-close" onclick="closeModal('profile-modal')">✕</div>
+    </div>
+    <div class="modal-body">
+      <div class="form-group"><label class="form-label">Full Name</label><div class="form-input" id="prof-fullname" style="background:var(--bg2);border:none;">Loading…</div></div>
+      <div class="form-group"><label class="form-label">Username</label><div class="form-input" id="prof-username" style="background:var(--bg2);border:none;">Loading…</div></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Role</label><div class="form-input" id="prof-role" style="background:var(--bg2);border:none;">Loading…</div></div>
+        <div class="form-group"><label class="form-label">Status</label><div class="form-input" id="prof-status" style="background:var(--bg2);border:none;">Loading…</div></div>
+      </div>
+      <div class="form-group"><label class="form-label">Linked Property</label><div class="form-input" id="prof-property" style="background:var(--bg2);border:none;">Loading…</div></div>
+      <div class="form-group"><label class="form-label">Email</label><input class="form-input" type="email" id="prof-email" placeholder="you@example.com"></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">New Password</label><input class="form-input" type="password" id="prof-pass" placeholder="Leave blank to keep current"></div>
+        <div class="form-group"><label class="form-label">Confirm</label><input class="form-input" type="password" id="prof-pass2" placeholder="Confirm new password"></div>
+      </div>
+      <div class="form-error" id="prof-error"></div>
+      <button class="btn btn-ghost btn-block mt-8" onclick="doLogout()">🚪 Log Out</button>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('profile-modal')">Cancel</button>
+      <button class="btn btn-primary" id="prof-save-btn" onclick="saveProfile()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- Forgot Password Modal -->
+<div class="modal-overlay" id="forgot-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">🔑 Reset Password</div>
+      <div class="modal-close" onclick="closeModal('forgot-modal')">✕</div>
+    </div>
+    <div class="modal-body">
+      <div id="forgot-success" style="display:none;text-align:center;padding:8px 0;">
+        <div style="font-size:42px;margin-bottom:14px;">📧</div>
+        <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:15px;margin-bottom:8px;">Check Your Email</div>
+        <div style="font-size:12.5px;color:var(--text2);line-height:1.6;margin-bottom:16px;">
+          If that email is registered, we've sent a new temporary password. Check your inbox (and spam folder).
+        </div>
+        <div class="alert alert-yellow" style="text-align:left;">
+          <span class="alert-icon">⚠️</span><div>Change your password right after logging in via My Profile.</div>
+        </div>
+      </div>
+      <div id="forgot-form">
+        <p style="font-size:12.5px;color:var(--text2);margin-bottom:16px;line-height:1.6;">Enter your registered email and we'll send a new temporary password.</p>
+        <div class="form-group"><label class="form-label">Email Address *</label><input class="form-input" type="email" id="forgot-email" placeholder="your@email.com"></div>
+        <div class="form-error" id="forgot-error"></div>
+      </div>
+    </div>
+    <div class="modal-footer" id="forgot-footer">
+      <button class="btn btn-ghost" onclick="closeModal('forgot-modal');resetForgotForm()">Cancel</button>
+      <button class="btn btn-primary" id="forgot-submit-btn" onclick="doForgotPassword()">📧 Send New Password</button>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

@@ -61,13 +61,7 @@ function toast(msg, type='success') {
 // ══════════════════════════════════════════════════════════════════════════════
 // AUTH
 // ══════════════════════════════════════════════════════════════════════════════
-let selectedRole = 'Administrator';
 
-function selectRole(role, el) {
-  selectedRole = role;
-  document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('selected'));
-  el.classList.add('selected');
-}
 
 async function doLogin() {
   const username = document.getElementById('login-user')?.value.trim();
@@ -77,10 +71,7 @@ async function doLogin() {
   btn.textContent = 'Signing in…'; btn.disabled = true;
   try {
     const user = await api('/auth/login', 'POST', { username, password });
-    if (user.role !== selectedRole) {
-      showLoginError(`This account is a ${user.role}, not ${selectedRole}.`);
-      btn.textContent = 'Sign In →'; btn.disabled = false; return;
-    }
+    
     SESSION = { role:user.role, username:user.username, name:user.full_name, userId:user.user_id, loggedIn:true };
     await completeLogin(user);
   } catch(e) {
@@ -2271,10 +2262,55 @@ async function submitRejectPayment() {
 // ══════════════════════════════════════════════════════════════════════════════
 // INCIDENTS
 // ══════════════════════════════════════════════════════════════════════════════
+let INCIDENT_HISTORY_FILTER = 'Open'; // Track selected filter
+
 function renderIncidents() {
-  const tbody = document.querySelector('#panel-incidents .table-wrap table tbody');
-  if (tbody) {
-    tbody.innerHTML = STATE.incidents.map(inc => `
+  // ── LEFT COLUMN: Only show OPEN incidents ──
+  const leftCol = document.querySelector('#panel-incidents .grid-2 > div:first-child');
+  if (leftCol) {
+    const cls  = {Open:'alert-red','In Progress':'alert-yellow',Resolved:'alert-green',Closed:'alert-blue'};
+    const icon = {Open:'🚨','In Progress':'⚠️',Resolved:'✅',Closed:'📁'};
+    const openIncidents = STATE.incidents.filter(i => i.status === 'Open');
+    
+    leftCol.innerHTML = openIncidents.length === 0 
+      ? '<div style="padding:20px;text-align:center;color:var(--text3);">✅ All incidents resolved!</div>'
+      : openIncidents.map(inc => `
+        <div class="alert ${cls[inc.status]||'alert-blue'}" style="margin-bottom:10px;">
+          <span class="alert-icon">${icon[inc.status]||'🔔'}</span>
+          <div style="flex:1;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;">
+              <strong>INC-${inc.id} — ${inc.priority.toUpperCase()}</strong>${badge(inc.status)}
+            </div>
+            <div style="font-size:12px;">${inc.description.substring(0,80)}${inc.description.length>80?'...':''}</div>
+            <div style="font-size:10px;opacity:.7;margin-top:4px;">Reported by: ${inc.reporter_name||'Unknown'} · ${inc.created_fmt||inc.created_at||''}</div>
+            ${SESSION.role!=='Homeowner'&&inc.status!=='Resolved'&&inc.status!=='Closed'?`
+            <div style="margin-top:8px;display:flex;gap:6px;">
+              <button class="btn btn-ghost" style="padding:3px 8px;font-size:11px;" onclick="updateIncidentStatus(${inc.id},'In Progress')">In Progress</button>
+              <button class="btn btn-success" style="padding:3px 8px;font-size:11px;" onclick="updateIncidentStatus(${inc.id},'Resolved')">Resolve</button>
+            </div>`:''}
+          </div>
+        </div>`).join('');
+  }
+  
+  // ── RIGHT COLUMN: Incident History with filtering ──
+  renderIncidentHistory();
+  
+  // ── Update counter ──
+  const sub = document.querySelector('#panel-incidents div[style*="font-size:12px"]');
+  if (sub) sub.textContent = STATE.incidents.filter(i=>i.status==='Open').length + ' active open incidents';
+  updateBadges();
+}
+
+function renderIncidentHistory() {
+  const tbody = document.getElementById('incident-history-tbody');
+  if (!tbody) return;
+  
+  // Filter incidents based on selected status
+  const filtered = STATE.incidents.filter(inc => inc.status === INCIDENT_HISTORY_FILTER);
+  
+  tbody.innerHTML = filtered.length === 0 
+    ? `<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text3);">No ${INCIDENT_HISTORY_FILTER.toLowerCase()} incidents</td></tr>`
+    : filtered.map(inc => `
       <tr>
         <td>INC-${inc.id}</td>
         <td>${inc.incident_type}</td>
@@ -2282,31 +2318,27 @@ function renderIncidents() {
         <td>${badge(inc.priority)}</td>
         <td>${badge(inc.status)}</td>
       </tr>`).join('');
-  }
-  const leftCol = document.querySelector('#panel-incidents .grid-2 > div:first-child');
-  if (leftCol) {
-    const cls  = {Open:'alert-red','In Progress':'alert-yellow',Resolved:'alert-green',Closed:'alert-blue'};
-    const icon = {Open:'🚨','In Progress':'⚠️',Resolved:'✅',Closed:'📁'};
-    leftCol.innerHTML = STATE.incidents.map(inc => `
-      <div class="alert ${cls[inc.status]||'alert-blue'}" style="margin-bottom:10px;">
-        <span class="alert-icon">${icon[inc.status]||'🔔'}</span>
-        <div style="flex:1;">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;">
-            <strong>INC-${inc.id} — ${inc.priority.toUpperCase()}</strong>${badge(inc.status)}
-          </div>
-          <div style="font-size:12px;">${inc.description.substring(0,80)}${inc.description.length>80?'...':''}</div>
-          <div style="font-size:10px;opacity:.7;margin-top:4px;">Reported by: ${inc.reporter_name||'Unknown'} · ${inc.created_fmt||inc.created_at||''}</div>
-          ${SESSION.role!=='Homeowner'&&inc.status!=='Resolved'&&inc.status!=='Closed'?`
-          <div style="margin-top:8px;display:flex;gap:6px;">
-            <button class="btn btn-ghost" style="padding:3px 8px;font-size:11px;" onclick="updateIncidentStatus(${inc.id},'In Progress')">In Progress</button>
-            <button class="btn btn-success" style="padding:3px 8px;font-size:11px;" onclick="updateIncidentStatus(${inc.id},'Resolved')">Resolve</button>
-          </div>`:''}
-        </div>
-      </div>`).join('');
-  }
-  const sub = document.querySelector('#panel-incidents div[style*="font-size:12px"]');
-  if (sub) sub.textContent = STATE.incidents.filter(i=>i.status==='Open').length + ' active open incidents';
-  updateBadges();
+  
+  // Update filter button styles
+  ['Open', 'In Progress', 'Resolved'].forEach(status => {
+    const btn = document.getElementById('filter-' + (status === 'Open' ? 'open' : status === 'In Progress' ? 'progress' : 'resolved'));
+    if (btn) {
+      if (status === INCIDENT_HISTORY_FILTER) {
+        btn.style.background = '#0284c7';
+        btn.style.color = 'white';
+        btn.style.borderColor = '#0284c7';
+      } else {
+        btn.style.background = 'white';
+        btn.style.color = '#333';
+        btn.style.borderColor = '#cbd5e1';
+      }
+    }
+  });
+}
+
+function filterIncidentHistory(status) {
+  INCIDENT_HISTORY_FILTER = status;
+  renderIncidentHistory();
 }
 
 // ── Incident Location Picker ──────────────────────────────────────────────────
@@ -3346,7 +3378,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Check if already logged in (session resumption)
   api('/auth/me').then(user => {
     if (user?.role) {
-      selectedRole = user.role;
+      
       SESSION = { role:user.role, username:user.username, name:user.first_name+' '+user.last_name, userId:user.id, loggedIn:true };
       completeLogin({ ...user, full_name: user.first_name+' '+user.last_name });
     }
